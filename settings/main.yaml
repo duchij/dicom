@@ -1,0 +1,6 @@
+main_server: http://10.10.2.49:3333
+client_server: http://10.10.2.49:3333
+storage_url: /opt/oserver/OrthancStorage/index
+imagemagick_dir: /opt/local/bin
+web_url: http://dicom.local/
+router: http://dicom.local/d/
