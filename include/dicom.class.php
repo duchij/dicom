@@ -337,7 +337,7 @@ class dicom extends main {
 
                 $dt = new DateTime();
                 $date = $dt->modify("-{$timeCount} {$timeName}");
-                $dicomTime = $date->format("Gi-");
+                $dicomTime = $date->format("Hi-");
 
             }
             else{
@@ -455,6 +455,7 @@ class dicom extends main {
 
     function searchByDateTimeModality($data,$modality=NULL)
     {
+        //var_dump($modality);
         $dicomDate=$data["dicomDate"];
         $dicomTime=$data["dicomTime"];
 
@@ -488,8 +489,9 @@ class dicom extends main {
 
                     $res3 = $this->ot->getSeriesData($serie);
                     if ($modality!==NULL && $modality!=="ALL" && strpos($modality,$res3["result"]["MainDicomTags"]["Modality"])!==FALSE){
+                        
                          $serie = $res3["result"];
-                         //var_dump($serie);
+                         
                          $finalData[$studyNum] = $study;
                     }else{
                         if ($modality!=="ALL"){
@@ -549,7 +551,7 @@ class dicom extends main {
     {
         $dt = new DateTime();
         $hourDt = $dt->modify("-1 hour");
-        $hour = $dt->format("Gi-");
+        $hour = $dt->format("Hi-");
         $today = date("Ymd");
         $data = array("dicomDate"=>$today,"dicomTime"=>$hour);
         $data["parameter"] = "Posledná hodina";
