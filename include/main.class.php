@@ -91,6 +91,7 @@ class main {
      */
     public function run($data)
     {
+        var_dump($data);
         
         if (isset($data["c"])) {
 

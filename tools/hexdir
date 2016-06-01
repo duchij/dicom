@@ -1,0 +1,26 @@
+#! /bin/bash
+for i in {0..15};
+	do 
+		printf -v dir1 "%x" "$i";
+		mkdir $dir1;
+		for j in {0..15};
+			do
+			printf -v dir2 "%x" "$j";
+			mkdir -p $dir1/$dir2;
+			for l in {0..15};
+                        	do
+				printf -v dir3 "%x" "$l";
+				mkdir -p $dir1/$dir2/$dir3;
+				cp ../../../tools/dir_info.txt $dir1/$dir2/$dir3;
+				echo "urobene $dir1/$dir2/$dir3";
+				#touch $dir/$dir2/$dir3/.dirinfo.txt;
+				#for k in {0..15};
+				#do
+				#	printf -v dir4 "%x" "$k";
+				#	mkdir -p $dir1/$dir2/$dir4/$dir4;
+				#done;				
+
+			done;
+		done;
+	#mkdir $dir1;
+done;

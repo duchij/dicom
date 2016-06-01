@@ -131,12 +131,14 @@ function dragging(e,ui){
 	
 }
 
-function loadSeriesData()
+function loadSeriesData(series)
 {
-	var series = $("input[id$=series]").val();
+	//var series = $("input[id$=series]").val();
+	alert(series);
 	
 	var t=new js_comunication();
-	t.addRawRequest("index.php","jsOt/loadSeriesInstancesAsync",this,[{series:series},"afterLoadSeries"]);
+	console.log("ti");
+	t.addRawRequest("http://dicom.local/a/","jsOt/loadSeriesInstancesAsync",this,[{series:series},"afterLoadSeries"]);
 	t.sendData();
 }
 

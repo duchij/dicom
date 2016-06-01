@@ -24,7 +24,8 @@
 					<table cellpadding="0" cellspacing="0">
 					{if count($Instances)>2}
 						<tr class="instanceData">
-							<td valign="top"><a href="javascript:showPreview('{$Instance}','{$orthancUrl}');" class="picLink"><img src="{$orthancUrl}/instances/{$Instances[0]}/preview" width="50"></a></td>
+<!-- 							<td valign="top"><a href="javascript:showPreview('{$Instance}','{$orthancUrl}');" class="picLink"><img src="{$orthancUrl}/instances/{$Instances[0]}/preview" width="50"></a></td> -->
+								<td valign="top"><a href="{$router}jsOt/showViewer&seriesUUID={$Series[$s].ID}" class="picLink"><img src="{$orthancUrl}/instances/{$Instances[0]}/preview" width="50"></a></td>
 							<td>
 								<ul>
 									<li><a href="{$orthancUrl}/web-viewer/app/viewer.html?series={$Series[$s].ID}" target="_blank">Prehliadac</a></li>
@@ -37,6 +38,8 @@
 					{foreach from=$Instances item=Instance key=i}
 						<tr class="instanceData">
 							<td valign="top"><a href="javascript:showPreview('{$Instance}','{$orthancUrl}');" class="picLink"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="50"></a></td>
+<!-- 							<td valign="top"><a href="{$router}dicom/showViewer?seriesUUID={$Series[$s].ID}" class="picLink"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="50"></a></td> -->
+							
 							<td>
 								<ul>
 									<li><a href="{$orthancUrl}/web-viewer/app/viewer.html?series={$Series[$s].ID}" target="_blank">Plná kvalita</a></li>
@@ -64,7 +67,8 @@
 				
 				{if count($Instances)>2}
 					<tr class="instanceData">
-					<td valign="middle"><center><a href="javascript:showPreview('{$Instance}','{$orthancUrl}');" class="picLink"><img src="{$orthancUrl}/instances/{$Instances[0]}/preview" width="100"></a></center></td>
+<!-- 					<td valign="middle"><center><a href="javascript:showPreview('{$Instance}','{$orthancUrl}');" class="picLink"><img src="{$orthancUrl}/instances/{$Instances[0]}/preview" width="100"></a></center></td> -->
+						<td valign="middle"><center><a href="{$router}jsOt/showViewer&seriesUUID={$Series.ID}" class="picLink"><img src="{$orthancUrl}/instances/{$Instances[0]}/preview" width="100"></a></center></td>
 					<td valign="middle">
 						<ul>
 							<li><a href="{$orthancUrl}/web-viewer/app/viewer.html?series={$Serie.ID}" target="_blank">Prehliadac</a></li>
@@ -77,6 +81,7 @@
 					{foreach from=$Instances item=Instance key=i}
 					<tr class="instanceData">
 					<td valign="middle"><center><a href="javascript:showPreview('{$Instance}','{$orthancUrl}');" class="picLink"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="100"></a></center></td>
+<!-- 						<td valign="middle"><center><a href="{$router}dicom/showViewer?seriesUUID={$Series.ID}" class="picLink"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="100"></a></center></td> -->
 					<td valign="middle">
 						<ul>
 							<li><a href="{$orthancUrl}/web-viewer/app/viewer.html?series={$Serie.ID}" target="_blank">Plná kvalita</a></li>

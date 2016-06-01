@@ -10,10 +10,16 @@ class orthanc extends main {
      * @var PDOObject $db sqlite3 PDO object for manipulating Orthanc storage...
      */
     var $db;
+    
+    var $dicomData;
 
     function __construct()
     {
         parent::__construct();
+        
+        $this->dicomData = yaml_parse_file(APP_DIR ."settings/main.yaml");
+    	//$_SESSION["dicomData"] = $data;
+    	//	$this->dicomData = $data;
     }
 
     public function debug($data)
@@ -181,17 +187,17 @@ class orthanc extends main {
 
     private function createDirStructure($instance)
     {
-        $dirName1 = substr($instance, 0,2);
-        $dirName2 = substr($instance, 2,2);
-
-        $osDir = PUBLIC_DIR."pictures".DIRECTORY_SEPARATOR.$dirName1.DIRECTORY_SEPARATOR.$dirName2.DIRECTORY_SEPARATOR;
-        $webDir = "pictures".DIRECTORY_SEPARATOR.$dirName1.DIRECTORY_SEPARATOR.$dirName2.DIRECTORY_SEPARATOR;
+        $dirName1 = substr($instance, 0,1);
+        $dirName2 = substr($instance, 1,1);
+        $dirName3 = substr($instance, 2,1);
+        $osDir = $this->dicomData["os_dir"]."dicom/pictures".DIRECTORY_SEPARATOR.$dirName1.DIRECTORY_SEPARATOR.$dirName2.DIRECTORY_SEPARATOR.$dirName3.DIRECTORY_SEPARATOR;
+        $webDir = "dicom/pictures".DIRECTORY_SEPARATOR.$dirName1.DIRECTORY_SEPARATOR.$dirName2.DIRECTORY_SEPARATOR.$dirName3.DIRECTORY_SEPARATOR;
         $result = true;
 
-        if (!file_exists($osDir))
+        /*if (!file_exists($osDir))
         {
             $result = mkdir($osDir,0777,true);
-        }
+        }*/
 
         return array("status"=>$result,"osDir"=>$osDir,"webDir"=>$webDir);
 
@@ -246,7 +252,7 @@ class orthanc extends main {
     }
 
 
-    /** Creates PNG/JPG files from ORTHANC with UUID.png/.jpg and 50% smaller with UUID_small.png/jpg
+/** Creates PNG/JPG files from ORTHANC with UUID.png/.jpg and 50% smaller with UUID_small.png/jpg
      *
      * @param array $seriesData for the Study
      * @param string $extension (lowerCase) - PNG if no setted, or JPG, files are saved into strctured diretory tree from UUID
@@ -256,84 +262,92 @@ class orthanc extends main {
      */
     public function createFilesFromSeriesInstances($seriesData,$extension="png")
     {
+
         $extension = strtolower($extension);
 
         $result = array();
+
+        $order = 0;
+        $instancesLn = count($seriesData["Instances"]);
+
+        //$studio->cc_tSetProgressLabel("Nacitavam snimky 0/".$instancesLn);
         foreach ($seriesData["Instances"] as $instance){
 
-           // foreach ($row["Instances"] as $instance){
+        	$dirData  = $this->createDirStructure($instance);
 
-                $dirData  = $this->createDirStructure($instance);
+        	$picDir = $dirData["osDir"];
+        	$webDir = $dirData["webDir"];
+        	
+        	$res = $this->getContent2($this->dicomData["main_server"]."/instances/".$instance);
+        	if ($res["status"]==FALSE){
+        	    return $res;
+        	}
+        	$instanceData = $res["result"];
+        	
+            $fileName = $picDir.$instance;
 
-                if (!$dirData["status"]){
-                    return false;
-                }
+            $fileNameExt = sprintf("%s.png",$fileName);
 
-                $picDir = $dirData["osDir"];
-                $webDir = $dirData["webDir"];
-                $fileName = $picDir.$instance;
+            if (!file_exists($fileNameExt)){
 
-                $fileNameExt = sprintf("%s.png",$fileName);
+                $picData = $this->getPNGContents($this->dicomData["main_server"]."/instances/".$instance."/preview");
+                if (file_put_contents($fileNameExt,$picData)==FALSE){
+                    return FALSE;
+                	}
+            }
+            $command="";
+            $fileTmp  = basename($fileName);
+                
+             //   $studio->cc_tSetProgressLabel("Nacitavam snimku ".$order." z ".$instancesLn);
+                
+            switch ($extension){
 
-                if (!file_exists($fileNameExt)){
+                case "png":
 
-                    $picData = $this->getPNGContents(O_URL."/instances/".$instance."/preview");
+                        $result[$order]["instance"] = $instance;
 
-                        if (file_put_contents($fileNameExt,$picData)!=FALSE){
+                        $result[$order]["extension"] = $extension;
+                        $result[$order]["file"]= $webDir.$fileTmp.".png";
+                        $result[$order]["order"] = $instanceData["IndexInSeries"];
+                        $output=array();
+                        $command = sprintf($this->dicomData["imagemagick_dir"]."identify %s.png ",$fileName);
+                        exec($command,$output);
+                        $result[$order]["info"] = $this->parseFileInfo($output);
+                       	$result[$order]["SOAPSeriesUID"] = $seriesData["MainDicomTags"]["SeriesInstanceUID"];
 
-                        $command="";
-                        $fileTmp  = basename($fileName);
-                        switch ($extension){
-                            case "png": //resizes the image to 50% of size to png
+                       	break;
+                case "jpg":
+                		$creatFile = sprintf("%.jpg",$fileName);
+                		if (!file_exists($creatFile))
+                		{
+                		    $modality=$seriesData["MainDicomTags"];
+                		    if ($modality=="CT" || $modality=="MR"){
+                		        $command = sprintf($this->dicomData["imagemagick_dir"]."convert %s.png -equalize %s.jpg",$fileName,$fileName);
+                		    }else{
+                		        $command = sprintf($this->dicomData["imagemagick_dir"]."convert %s.png %s.jpg",$fileName,$fileName);
+                		    }
+                            
+                            $output=array();
+                            exec($command,$output,$status);
+                            $result[$order]["convert"]["output"] = $output;
+                            $result[$order]["convert"]["status"] = $status;
+                		}
 
-                                $command = sprintf(IM_DIR."convert %s.png -resize 50%% %s_small.png",$fileName,$fileName);
+                		$result[$order]["instance"] = $instance;
+                       	$result[$order]["file"] = $webDir.$fileTmp.".jpg";
 
-                                exec($command,$output,$status);
 
-                                $result[$instance][$extension]["resize"]["output"] = $output;
-                                $result[$instance][$extension]["resize"]["status"] = $status;
+                        $command = sprintf($this->dicomData["imagemagick_dir"]."identify %s.jpg",$fileName);
+                        $output=array();
+                        exec($command,$output);
+                        $result[$order]["info"] = $this->parseFileInfo($output);
+                       	$result[$order]["order"] = $instanceData["IndexInSeries"];
+                       	$result[$order]["SeriesInstanceUID"] = $seriesData["MainDicomTags"]["SeriesInstanceUID"];
 
-                                $result[$instance][$extension]["origFile"] = $webDir.$fileTmp.".png";
-                                $result[$instance][$extension]["thumbFile"] = $webDir.$fileTmp."_small.png";
-                                break;
-                            case "jpg":
-                                $command = sprintf(IM_DIR."convert %s.png %s.jpg",$fileName,$fileName);
-
-                                exec($command,$output,$status);
-                                $result[$instance][$extension]["convert"]["output"] = $output;
-                                $result[$instance][$extension]["convert"]["status"] = $status;
-
-                                $command = sprintf(IM_DIR."convert %s.jpg -resize 50%% %s_small.jpg",$fileName,$fileName);
-                                exec($command,$output,$status);
-
-                                $result[$instance][$extension]["resize"]["output"] = $output;
-                                $result[$instance][$extension]["resize"]["status"] = $status;
-
-                                $result[$instance][$extension]["origFile"] = $webDir.$fileTmp.".jpg";
-                                $result[$instance][$extension]["thumbFile"] = $webDir.$fileTmp."_small.jpg";
-
-                                break;
-                        }
+                        break;
                     }
-                    else{
-                        return false;
-                    }
+                    $order++;
                 }
-                else{
-                    $fileTmp  = basename($fileName);
-                    switch ($extension){
-                        case "png":
-                            $result[$instance][$extension]["origFile"] = $webDir.$fileTmp.".png";
-                            $result[$instance][$extension]["thumbFile"] = $webDir.$fileTmp."_small.png";
-                            break;
-                        case "jpg":
-                            $result[$instance][$extension]["origFile"] = $webDir.$fileTmp.".jpg";
-                            $result[$instance][$extension]["thumbFile"] = $webDir.$fileTmp."_small.jpg";
-                            break;
-                    }
-                }
-           // }
-        }
         return $result;
     }
     /**

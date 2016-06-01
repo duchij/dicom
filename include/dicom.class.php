@@ -558,6 +558,8 @@ class dicom extends main {
 
         $this->searchByDateTimeModality($data,"ALL");
     }
+    
+    
 
 }
 ?>

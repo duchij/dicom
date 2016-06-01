@@ -73,6 +73,13 @@ class jsOt extends main {
 
         return array("status"=>true,"result"=>$result["Instances"]);
     }
+    
+    
+    function showViewer($data){
+        var_dump($data);
+        $this->smarty->assign("uuid",$data["seriesUUID"]);
+        $this->smarty->display("mviewer.tpl");
+    }
 
 
 }
