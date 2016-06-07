@@ -323,7 +323,7 @@ js_comunication.prototype.__sendData = function(_source,_callBack,oThis)
 	this.xhttp.open('POST',__url__,true);
 	this.xhttp.setRequestHeader('Content-type','application/x-www-form-urlencoded');
 			
-	this.xhttp.send("a=async&client=rjson&data="+JSON.stringify(data));
+	this.xhttp.send("x=1&client=rjson&data="+JSON.stringify(data));
 	
 	this.xhttp.onreadystatechange = function (e)
 	{
@@ -478,6 +478,7 @@ function completedRequest(respond,source,callBack,oArgs)
 
 function __unCompletedRequest(respond)
 {
+	console.log(respond);
 	var resObj=JSON.parse(respond);
 	//toggleComm(false);
 	for (var row in resObj){

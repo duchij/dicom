@@ -16,9 +16,10 @@ DEFINE("PUBLIC_DIR",__DIR__.DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR);
 
 //require_once INCLUDE_DIR.'orthanc.class.php';
 require_once INCLUDE_DIR.'log.class.php';
-require_once APP_DIR.'smarty/Smarty.class.php';
+require_once APP_DIR.'../smarty/Smarty.class.php';
 require_once INCLUDE_DIR."commJs.class.php";
 require_once INCLUDE_DIR."db.class.php";
 require_once INCLUDE_DIR.'main.class.php';
+require_once INCLUDE_DIR.'orthanc.class.php';
 
 ?>

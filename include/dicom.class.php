@@ -198,6 +198,7 @@ class dicom extends main {
 
     function searchOrthanc($data)
     {
+        
         $query="";
         if (isset($data["queryDate"]) && strlen(trim($data["queryDate"]))>0){
 
@@ -213,15 +214,31 @@ class dicom extends main {
             }
         }
         
-        
         if (isset($query))
         {
             if (strpos($query," ")!==false){
                 $tmp = explode(" ",$query);
                 $query = trim($tmp[0])."*";
             }
-            if (preg_match('/^bn[0-9]{10}$/', $query)){
+            
+            if (preg_match('/^[0-9]{6}\/[0-9]{4}\*$/', $query)){
                 $query = str_replace("bn", "", $query);
+                $query = str_replace("/", "", $query);
+                $query = str_replace("*", "", $query);
+            
+                 
+                $res = $this->ot->searchOrthancPatientID($query);
+                if ($res["status"]){
+                    $patientData[] = $res["result"];
+                }
+            }
+            
+            
+            if (preg_match('/^[0-9]{10}\*$/', $query)){
+                $query = str_replace("bn", "", $query);
+                $query = str_replace("*", "", $query);
+                
+               
                 $res = $this->ot->searchOrthancPatientID($query);
                 if ($res["status"]){
                     $patientData[] = $res["result"];
@@ -559,6 +576,88 @@ class dicom extends main {
         $this->searchByDateTimeModality($data,"ALL");
     }
     
+    
+    function checkDbForPics($series)
+    {
+        $sql  = "SELECT COUNT([series_UUID]) AS [rows] FROM [pic_data] WHERE [series_uuid]={series|s}";
+
+        $rep = array("series"=>$series);
+        
+        $sql=$this->db->buildSql($sql,$rep);
+        
+        $res = $this->db->row($sql);
+        
+        return $res;
+        
+    }
+    
+    
+    function showViewer($data){
+        
+        $pics = $this->checkDbForPics($data["seriesUUID"]);
+        
+        if (intval($pics["rows"]) > 0) {
+            
+            $this->smarty->assign("series",$data["seriesUUID"]);
+            $this->smarty->assign("cache","1");
+            $this->smarty->display("mviewer.tpl");
+            
+        }
+        else{
+            $res1 = $this->ot->getSeriesData($data["seriesUUID"]);
+            
+            if ($res1["status"]==FALSE){
+                $this->showErrorMsg($res1["result"]);
+            }
+            
+            $res = $this->ot->createFilesFromSeriesInstances($res1["result"]);
+            //  var_dump($res);
+            
+            if ($res){
+            
+                $dt = new DateTime();
+                $expDt = $dt->modify("+3 month");
+                $expireDate = $expDt->format("Y-m-d");
+            
+                $dbRes = $this->saveDataToDb($res, $data["seriesUUID"], $expireDate);
+            
+                if ($dbRes["status"]==false){
+                    $this->showErrorMsg($dbRes["result"]);
+                }
+            
+            
+                $this->smarty->assign("series",$data["seriesUUID"]);
+                $this->smarty->display("mviewer.tpl");
+            }else{
+                $this->showErrorMsg("No pictures created.....");
+            } 
+        }
+        
+    }
+    
+    function saveDataToDb($data,$seriesUUID, $expireDate)
+    {
+        $dataLn = count($data);
+            
+        for ($d=1;$d<=$dataLn;$d++)
+        {
+        
+            $saveData[] = array(
+                
+                "series_uuid"=>$seriesUUID,
+                "instance_uuid"=>$data[$d]["instance"],
+                "file_location"=>$data[$d]["file"],
+                "file_info"=>serialize($data[$d]["info"]),
+                "order" =>$data[$d]["order"],
+                "expire" => $expireDate,
+                //"series_instance_uid"=>$data[$d]["SeriesInstanceUID"],
+            );
+        }
+            
+            $res = $this->db->insert_rows("pic_data",$saveData);
+            
+            return $res;
+    }
     
 
 }

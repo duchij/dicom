@@ -203,6 +203,31 @@ class orthanc extends main {
 
 
     }
+    
+    private function parseFileInfo($text)
+    {
+        $data = explode(" ",$text[0]);
+        $size = explode("x",$data[2]);
+    
+        return array(
+            "file"=>$data[0],
+            "extension"=>$data[1],
+            "width"=>$size[0],
+            "height"=>$size[1],
+            "geometry"=>$data[3],
+            "depth"=>$data[4],
+            "mode"=>$data[5],
+            "colors"=>$data[6],
+            "fileSize"=>$data[7],
+            "data1"=>$data[8],
+            "data2"=>$data[9],
+    
+    
+        );
+    
+    
+    }
+    
 
     public function createVideoFromSeriesInstance($seriesData,$recreateVideo = false)
     {
@@ -299,7 +324,7 @@ class orthanc extends main {
             $fileTmp  = basename($fileName);
                 
              //   $studio->cc_tSetProgressLabel("Nacitavam snimku ".$order." z ".$instancesLn);
-                
+            $order = $instanceData["IndexInSeries"];   
             switch ($extension){
 
                 case "png":
@@ -346,7 +371,7 @@ class orthanc extends main {
 
                         break;
                     }
-                    $order++;
+                    //$order++;
                 }
         return $result;
     }

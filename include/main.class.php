@@ -4,6 +4,8 @@
  *
  */
 class main {
+    
+   
 
     /**
      * @var log $log logovacie funkcie
@@ -36,18 +38,20 @@ class main {
         $this->smarty = new Smarty();
 
         $this->smarty->template_dir = APP_DIR."templates/";
-        $this->smarty->compile_dir  = APP_DIR."smarty/templates_c/";
-        $this->smarty->config_dir   = APP_DIR."smarty/configs/";
-        $this->smarty->cache_dir    = APP_DIR."smarty/cache/";
+        $this->smarty->compile_dir  = APP_DIR."../smarty/templates_c/";
+        $this->smarty->config_dir   = APP_DIR."../smarty/configs/";
+        $this->smarty->cache_dir    = APP_DIR."../smarty/cache/";
 
         $this->smarty->assign("orthancUrl",O_URL);
 
         $this->url = O_URL;
+        
         $this->smarty->assign("webUrl",WEB_URL);
 
         $this->smarty->assign("router",ROUTER);
 
         $this->commJs = new commJs();
+        
 
     }
     /**
@@ -91,7 +95,11 @@ class main {
      */
     public function run($data)
     {
-        var_dump($data);
+        
+        if (isset($data["x"])&& $data["x"]=="1"){
+            $this->runAsync($data);
+            return true;
+        }
         
         if (isset($data["c"])) {
 
@@ -130,6 +138,17 @@ class main {
            //echo "No sync class defined exiting";
         }
     }
+    
+    function runAsync($data){
+        $this->commJs->getRespond($data["data"],"rjson");
+    }
+    
+    function showErrorMsg($error){
+        $this->smarty->assign("error",$error);
+        $this->smarty->display("main.tpl");
+        exit;
+    }
+    
 
 }
 

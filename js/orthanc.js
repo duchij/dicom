@@ -1,7 +1,12 @@
 
-var instances =[];
+var Instances =[];
 
 var sliderData = {};
+
+var dicomDir = "http://dicom.local/public/dicom/pictures/";
+var dCacheDir = "http://dicom.local/public/";
+
+var cache = false;
 
 
 function showPreview(id,url){
@@ -106,24 +111,24 @@ function afterLoadData(status,result)
 	
 }
 
-function dragging(e,ui){
+function dragging(e,ui,cache){
 	
-	var barWidth = $("#sliderBar").width();
-	var ratio = barWidth / sliderData.frames;
-	var ratioM  = barWidth % sliderData.frames;
 	
-	var intRatio = Math.round(ratio);
-	var pos = ui.position.left;
-	var frame = Math.round(pos/intRatio+ratioM);
-
-	var instance = instances[frame];
+	
+	var pos = ui.value;
+	var instance = this.Instances[pos];
 	
 	if (instance != undefined)
 	{
-		var dir1 = instance.substr(0,2);
-		var dir2 = instance.substr(2,2);
-	
-		var url = "http://doma.local/nanodicom/public/pictures/"+dir1+"/"+dir2+"/"+instance+".png";
+		
+		if (this.cache==true){
+			var file = instance.file_location;
+			var url = this.dCacheDir+file;
+		}else{
+			var file = dirStructure(instance);
+			var url = this.dicomDir+file+".png";
+		}
+		$("#mplayer_frame").html((this.Instances.length-1)+"/"+pos);
 	
 		$("#player").attr("src",url);
 	}
@@ -131,47 +136,133 @@ function dragging(e,ui){
 	
 }
 
-function loadSeriesData(series)
-{
-	//var series = $("input[id$=series]").val();
-	alert(series);
+function dirStructure(instance){
+	var dir1 = instance.substr(0,1);
+	var dir2 = instance.substr(1,1);
+	var dir3 = instance.substr(2,1);
 	
+	return dir1+"/"+dir2+"/"+dir3+"/"+instance;
+}
+
+function loadSeriesData(series,cache)
+{
 	var t=new js_comunication();
-	console.log("ti");
-	t.addRawRequest("http://dicom.local/a/","jsOt/loadSeriesInstancesAsync",this,[{series:series},"afterLoadSeries"]);
+	//var series = $("input[id$=series]").val();
+	if (cache === "1"){
+		
+		t.addRawRequest("http://dicom.local/index.php","jsOt/loadDataFromDb",this,[{series:series},"afterGetDataFromDb"]);
+		
+	}else{
+		
+		t.addRawRequest("http://dicom.local/index.php","jsOt/loadSeriesInstancesAsync",this,[{series:series},"afterLoadSeries"]);
+		
+	}
 	t.sendData();
+	
+}
+
+function initSlider(frCount,cache){
+	$("#sliderBar").css("width","100%");
+	
+	$("#slider").slider();
+	
+	$("#slider").slider({
+		containment:"#sliderBar",
+		cursor:"move",
+		axis:"x",
+		min:0,
+		max:frCount
+	});
+	
+	$("#slider").on("slide",function(e,ui){
+		//console.log([e,ui]);
+		
+		dragging(e,ui);
+	});
+	
+	
+}
+
+
+
+function afterGetDataFromDb(status,result)
+{
+	if (status){
+		if (result.length > 0){
+			this.cache = true;
+			initSlider(result.length);
+			this.Instances = result;
+			var file = result[0].file_location;
+			var url = this.dCacheDir+file;
+			
+			var canvas = document.getElementById("player");
+			
+			var ctx = canvas.getContext("2d");
+			
+			var img = new Image();
+			img.src = url;
+			ctx.drawImage(img,0,0,800,800);
+			
+			//$("#player").attr("src",url);
+			
+		}
+	}
 }
 
 function afterLoadSeries(status,result)
 {
+	
 	if (status)
 	{
-		sliderData.frames = result.length;
+		this.sliderData.frames = result.Instances.length;
+		
+		//$("#sliderBar").css("width",sliderData.frames+"px");
+		
 		$("#sliderBar").css("width","100%");
+		
+		$("#slider").slider();
+		//$("#slider").slider("option","step",7);
 	
-		this.instances = result;
-		var instance = result[0];
+		this.Instances = result.Instances;
+		
+		var Instance = result.Instances[0];
 
-		var dir1 = instance.substr(0,2);
-		var dir2 = instance.substr(2,2);
+		var file = dirStructure(Instance);
 	
-		var url = "http://doma.local/nanodicom/public/pictures/"+dir1+"/"+dir2+"/"+instance+".png";
-		$("#player").attr("src",url);
+		var url = this.dicomDir+file+".png";
+		
+		
+		var canvas = document.getElementById("player");
+		
+		var ctx = canvas.getContext("2d");
+		
+		var img = new Image();
+		img.src = url;
+		ctx.drawImage(img,0,0,10,20);
+		
+		//$("#player").attr("src",url);
 	
-		if (instances.length > 1)
+		if (this.Instances.length > 1)
 		{
-			$("#slider").draggable({
-			containment:"#sliderBar",
-			cursor:"move",
+			$("#slider").slider({
+				containment:"#sliderBar",
+				cursor:"move",
 			//snap:"#sliderBar",
 			//grid:[1,30],
-			axis:"x",
-			drag:function(e,ui){
-				dragging(e,ui);
-			}
+				axis:"x",
+				min:0,
+				max:result.Instances.length
+				/*slide:function(e,ui){
+					dragging(e,ui);
+				}*/
 			});
-		}
-		else{
+			
+			$("#slider").on("slide",function(e,ui){
+				//console.log([e,ui]);
+				
+				dragging(e,ui);
+			});
+			
 		}
 	}
 }

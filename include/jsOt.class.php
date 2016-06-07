@@ -1,4 +1,5 @@
 <?php
+
 class jsOt extends main {
 
     function __construct()
@@ -69,18 +70,34 @@ class jsOt extends main {
 
     function loadSeriesInstancesAsync($data)
     {
-        $result= $this->ot->getSeriesData($data["series"]);
-
-        return array("status"=>true,"result"=>$result["Instances"]);
+        $ot= $this->loadObject("orthanc");
+        
+        $res= $ot->getSeriesData($data["series"]);
+        return $res;
     }
     
     
-    function showViewer($data){
-        var_dump($data);
-        $this->smarty->assign("uuid",$data["seriesUUID"]);
-        $this->smarty->display("mviewer.tpl");
+    function loadDataFromDb($data)
+    {
+        $series = $data["series"];
+        
+        $sql = "SELECT [file_location] FROM [pic_data] WHERE [series_uuid]={series|s} ORDER BY [order] ASC";
+        $rep = array("series"=>$data["series"]);
+        
+        $sql= $this->db->buildSql($sql, $rep);
+        
+        $table = $this->db->table($sql);
+        
+        if ($table["status"]){
+            return array("status"=>true,"result"=>$table["table"]);
+        }else{
+            return array("status"=>false,"result"=>$table["msg"][2]);
+        }
+        
+        
     }
-
+    
+    
 
 }
 return "jsOt";

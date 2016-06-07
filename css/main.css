@@ -74,27 +74,30 @@ body {
 }
 
 #commBall {
-	display:none;
+	position:absolute;
+	top:0px;
+	width:50px;
+	display:block;
+	z-index: 9999;
+	visibility:hidden;
 }
 
 #sliderBar {
 	width:400px;
 	height:30px;
-	background-color: red;
+	/*background-color: lightgray;*/
 	text-align: center;
 }
-#slider {
+/*#slider {
 	width:30px;
 	height:30px;
 	background-color: black;
 	text-align:center;
-}
+}*/
 
 #imagePlayer{
 	text-align: center;
-	border-width:1px;
-	border-style:solid;
-	border-color: black;
+	border:none;
 }
 
 
