@@ -1,4 +1,7 @@
 
+var selectedPicData = {};
+
+
 var Instances =[];
 
 var sliderData = {};
@@ -7,6 +10,42 @@ var dicomDir = "http://dicom.local/public/dicom/pictures/";
 var dCacheDir = "http://dicom.local/public/";
 
 var cache = false;
+
+
+var __width = 0;
+var __height= 0;
+
+
+
+function clone(obj){
+    if(obj == null || typeof(obj) != 'object')
+        return obj;
+
+    var temp = new obj.constructor(); 
+    for(var key in obj)
+        temp[key] = clone(obj[key]);
+
+    return temp;
+}
+
+
+function copy_object(obj)
+{
+	//return copyObject(obj);
+	
+	if (typeof (obj) == "object") {
+		
+		if (obj instanceof Array) var new_obj = [];
+		else var new_obj = {};
+
+		for (var i in obj) {
+			new_obj[i] = copy_object(obj[i]);
+		}
+		
+		return new_obj;
+	}
+	else return obj;
+};
 
 
 function showPreview(id,url){
@@ -28,31 +67,7 @@ function showPreview(id,url){
 							}
 						}
 					]
-			
-			
-			
-			/*resizeStop:function(event,ui){
-				var canvas = document.getElementById('canvas');
-				var ctx = canvas.getContext("2d");
-				console.log( $(this).innerWidth);
-				//ctx.canvas.width  = $(this).innerWidth;
-				//ctx.canvas.height = $(this).innerHeight;
-			}*/
 	});
-	
-	/*var img = new Image();
-	var str2 = onlineRes.fncs.sprintf("{url}/instances/{id}/preview",{url:url,id:id});
-	img.src = str2;
-	console.log([img.height,img.width]);
-	var canvas = document.getElementById('canvas');
-	var ctx = canvas.getContext("2d");
-	
-	
-	
-	//ctx.canvas.width  = $(this).innerWidth;
-	//ctx.canvas.height = $(this).innerHeight;
-	ctx.drawImage(img,0,0);*/
-	
 }
 
 function autoQueryAndRetrieve(filter)
@@ -77,9 +92,7 @@ function afterAllRetrieve(status,result)
 
 function showQueries(status,result)
 {
-	//if (status)
 	console.log(result);
-	
 }
 
 function loadPictures(id)
@@ -111,6 +124,27 @@ function afterLoadData(status,result)
 	
 }
 
+function resetPicture()
+{
+	
+	var canvas = document.getElementById("player");
+	var ctx = canvas.getContext("2d");
+	
+	var hiddenCanvas = document.getElementById("hiddenPlayer");
+	var hiddenCtx = hiddenCanvas.getContext("2d");
+	
+	var data = hiddenCtx.getImageData(0,0,this.__width,this.__height);
+	
+	ctx.putImageData(data,0,0);
+	
+	$("#contrastSlider").slider("value",0);
+	$("#brightnessSlider").slider("value",0);
+	
+	$(".contrastLabel").html("0");
+	$(".brightnessLabel").html("0");
+	
+}
+
 function dragging(e,ui,cache){
 	
 	
@@ -130,11 +164,105 @@ function dragging(e,ui,cache){
 		}
 		$("#mplayer_frame").html((this.Instances.length-1)+"/"+pos);
 	
-		$("#player").attr("src",url);
+		var wRatio = this.__width / instance.file_info.width;
+		var hRatio = this.__height / instance.file_info.height;
+		
+		
+		var canvas = document.getElementById("player");
+		var ctx = canvas.getContext("2d");
+		var img = new Image();
+		img.src = url;
+		
+		var viewWidth = instance.file_info.width*wRatio;
+		var viewHeight = instance.file_info.height*hRatio;
+		
+		
+		ctx.drawImage(img,0,0,viewWidth,viewHeight);
+		
+		var hiddenCanvas = document.getElementById("hiddenPlayer");
+		var hiddenCtx = hiddenCanvas.getContext("2d");
+		
+		hiddenCtx.drawImage(img,0,0,viewWidth,viewHeight);
+	}
+}
+
+
+function changeContrast(e,ui)
+{
+	
+	console.log(ui.value);
+	
+	//return;
+	
+	
+	var canvas = document.getElementById("player");
+	var ctx = canvas.getContext("2d");
+	
+	var hiddenCanvas = document.getElementById("hiddenPlayer");
+	var hiddenCtx = hiddenCanvas.getContext("2d");
+	
+	var imageData= hiddenCtx.getImageData(0,0,this.__width,this.__height);
+	
+	//console.log(imageData);
+	//return;
+	
+	
+	
+	var dataLn = imageData.data.length;
+	var data = imageData.data
+	var contrast = ui.value;
+	
+	$(".contrastLabel").html(contrast);
+	
+	for (var i = 0; i < dataLn; i += 4) {
+		
+		var average = Math.round( ( data[i] + data[i+1] + data[i+2] ) / 3 );
+		
+		if (average > 127){
+		    data[i] += ( data[i]/average ) * contrast;
+		    data[i+1] += ( data[i+1]/average ) * contrast;
+		    data[i+2] += ( data[i+2]/average ) * contrast;
+		}else{
+		    data[i] -= ( data[i]/average ) * contrast;
+		    data[i+1] -= ( data[i+1]/average ) * contrast;
+		    data[i+2] -= ( data[i+2]/average ) * contrast;
+		}
 	}
 	
+	imageData.data = data;
 	
+	ctx.putImageData(imageData,0,0);
 }
+
+function changeBrightness(e,ui)
+{
+	var canvas = document.getElementById("player");
+	var ctx = canvas.getContext("2d");
+	
+	var hiddenCanvas = document.getElementById("hiddenPlayer");
+	var hiddenCtx = hiddenCanvas.getContext("2d");
+	
+	var imageData= hiddenCtx.getImageData(0,0,this.__width,this.__height);
+	
+	//console.log(imageData);
+	//return;
+	
+	var dataLn = imageData.data.length;
+	var data = imageData.data
+	var brightness = ui.value;
+	$(".brightnessLabel").html(brightness);
+	
+	for (var i = 0; i < dataLn; i += 4) {
+		data[i] = data[i]+brightness < 255 ? data[i]+brightness:255;
+		data[i+1] = data[i+1]+brightness < 255 ? data[i+1]+brightness:255;
+		data[i+2] = data[i+2]+brightness < 255 ? data[i+2]+brightness:255;
+	}
+	
+	imageData.data = data;
+	
+	ctx.putImageData(imageData,0,0);
+}
+
 
 function dirStructure(instance){
 	var dir1 = instance.substr(0,1);
@@ -187,23 +315,43 @@ function initSlider(frCount,cache){
 
 function afterGetDataFromDb(status,result)
 {
+	
 	if (status){
 		if (result.length > 0){
+			
+			
 			this.cache = true;
 			initSlider(result.length);
+			
 			this.Instances = result;
 			var file = result[0].file_location;
-			var url = this.dCacheDir+file;
+			var imageData = result[0].file_info;
 			
+			
+			var wRatio = this.__width / imageData.width;
+			var hRatio = this.__height / imageData.height;
+			
+			
+			var url = this.dCacheDir+file;
 			var canvas = document.getElementById("player");
 			
 			var ctx = canvas.getContext("2d");
 			
 			var img = new Image();
-			img.src = url;
-			ctx.drawImage(img,0,0,800,800);
+			img.src =url
 			
-			//$("#player").attr("src",url);
+			var viewWidth = imageData.width*wRatio;
+			var viewHeight = imageData.height*hRatio;
+			
+			ctx.drawImage(img,0,0,viewWidth,viewHeight);
+			
+			
+			
+			var hiddenCanvas = document.getElementById("hiddenPlayer");
+			var hiddenCtx = hiddenCanvas.getContext("2d");
+			
+			hiddenCtx.drawImage(img,0,0,viewWidth,viewHeight);
+			
 			
 		}
 	}
@@ -216,11 +364,7 @@ function afterLoadSeries(status,result)
 	{
 		this.sliderData.frames = result.Instances.length;
 		
-		//$("#sliderBar").css("width",sliderData.frames+"px");
-		
-		$("#sliderBar").css("width","100%");
-		
-		$("#slider").slider();
+		initSlider();
 		//$("#slider").slider("option","step",7);
 	
 		this.Instances = result.Instances;
@@ -239,39 +383,51 @@ function afterLoadSeries(status,result)
 		var img = new Image();
 		img.src = url;
 		ctx.drawImage(img,0,0,10,20);
-		
-		//$("#player").attr("src",url);
 	
-		if (this.Instances.length > 1)
-		{
-			$("#slider").slider({
-				containment:"#sliderBar",
-				cursor:"move",
-			//snap:"#sliderBar",
-			//grid:[1,30],
-				axis:"x",
-				min:0,
-				max:result.Instances.length
-				/*slide:function(e,ui){
-					dragging(e,ui);
-				}*/
-			});
-			
-			$("#slider").on("slide",function(e,ui){
-				//console.log([e,ui]);
-				
-				dragging(e,ui);
-			});
-			
-		}
+		
 	}
 }
 
-$(document).ready(function(){
+
+function init()
+{
+	this.__width = $("#player").width();
+	this.__height = $("#player").height();
+	
+	
+	
+	$("#contrastSlider").slider({
+		min:0,
+		max:100
+	
+	});
+	
+	$("#contrastSlider").on("slide",function(e,ui){
+			changeContrast(e,ui);
+	});
+	
+
+	$("#brightnessSlider").slider({
+		min:-255,
+		max:255
+	
+	});
+	
+	$("#brightnessSlider").on("slide",function(e,ui){
+			changeBrightness(e,ui);
+	});
+	
+	
+	
+	
 	//loadSeriesData();
 	$("#dialog").dialog();
 	$("#dialog").dialog("close");
 	$("#datePicker").datepicker();
 	$("#datePicker").datepicker("option", "dateFormat", "yymmdd");
-	
+
+}
+
+$(document).ready(function(){
+	init();
 });

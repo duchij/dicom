@@ -81,7 +81,7 @@ class jsOt extends main {
     {
         $series = $data["series"];
         
-        $sql = "SELECT [file_location] FROM [pic_data] WHERE [series_uuid]={series|s} ORDER BY [order] ASC";
+        $sql = "SELECT [file_location],[file_info] FROM [pic_data] WHERE [series_uuid]={series|s} ORDER BY [order] ASC";
         $rep = array("series"=>$data["series"]);
         
         $sql= $this->db->buildSql($sql, $rep);
@@ -89,6 +89,10 @@ class jsOt extends main {
         $table = $this->db->table($sql);
         
         if ($table["status"]){
+            
+            foreach ($table["table"] as &$row){
+                $row["file_info"] = unserialize($row["file_info"]);
+            }
             return array("status"=>true,"result"=>$table["table"]);
         }else{
             return array("status"=>false,"result"=>$table["msg"][2]);
