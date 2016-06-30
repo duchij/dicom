@@ -21,7 +21,7 @@ class db{
 		{
 			//echo $e->getMessage();
 			$this->log->logData($e->getMessage(),false,"chyba v inicializacii db");
-			//exit;
+			exit;
 		}
 		
 		//echo "ll";

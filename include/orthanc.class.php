@@ -88,9 +88,13 @@ class orthanc extends main {
      */
     public function queryAndRetrieve($queryObject,$modality)
     {
+        
         $url = O_C_URL."/modalities/".$modality."/query";
+        
 
         $res = $this->_curl_c($url,$queryObject);
+        
+        
 
         if ($res["status"] === FALSE){
             return $res;
@@ -109,6 +113,7 @@ class orthanc extends main {
         $resData = array();
         foreach ($ansArr["result"] as $key=>$value) {
             $url = O_C_URL.$queryData["Path"]."/answers/".$value."/content";
+            
             $dataTmp = $this->getContent2($url);
 
             if ($dataTmp["status"]===false){
@@ -124,6 +129,8 @@ class orthanc extends main {
 
             $resData[] = $tmpArr;
         }
+        
+        
         return $this->resultStatus(true, $resData);
     }
 
@@ -143,7 +150,7 @@ class orthanc extends main {
             return array("status"=>false,"result"=>curl_strerror($er));
         }
 
-        return array("status"=>true,"result"=>$result);
+        return array("status"=>true,"result"=>$data["rId"]);
 
     }
 

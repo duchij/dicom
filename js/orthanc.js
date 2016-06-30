@@ -11,6 +11,9 @@ var dCacheDir = "http://dicom.local/public/";
 
 var cache = false;
 
+var orthancREST = "http://10.10.2.49:3333";
+var dicomServer = "http://10.10.2.49/dicom/";
+
 
 var __width = 0;
 var __height= 0;
@@ -49,7 +52,7 @@ function copy_object(obj)
 
 
 function showPreview(id,url){
-	var str = onlineRes.fncs.sprintf("<center>Ťahom za pravý dolný roh sa obrázok bude zväčšovať...<br><img src='{url}/instances/{id}/preview' width='100%'></center>",{url:url,id:id});
+	/*var str = onlineRes.fncs.sprintf("<center>Ťahom za pravý dolný roh sa obrázok bude zväčšovať...<br><img src='{url}/instances/{id}/preview' width='100%'></center>",{url:url,id:id});
 	
 	$("#preview").html(str);
 	
@@ -67,7 +70,10 @@ function showPreview(id,url){
 							}
 						}
 					]
-	});
+	});*/
+	
+	$(".cell_"+id).css("display","inline");
+	
 }
 
 function autoQueryAndRetrieve(filter)
@@ -315,7 +321,7 @@ function initSlider(frCount,cache){
 
 function afterGetDataFromDb(status,result)
 {
-	
+	console.log([status,result]);
 	if (status){
 		if (result.length > 0){
 			
@@ -386,6 +392,25 @@ function afterLoadSeries(status,result)
 	
 		
 	}
+}
+
+function pacsMove(path,rId)
+{
+	
+	var t= new js_comunication();
+	$("#indi_"+rId).css("display","inline");
+	
+	t.addRawRequest("index.php","jsOt/moveFromPacs",this,[{path:path,rId:rId},"afterMoveStudy"]);
+	t.sendData();
+	
+}
+
+function afterMoveStudy(status,result)
+{
+	if (status){
+		$("#row_"+result).remove();
+	}
+	
 }
 
 

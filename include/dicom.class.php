@@ -196,8 +196,18 @@ class dicom extends main {
         $this->ot->moveQRData($data, "OCLIENT");
     }
 
-    function searchOrthanc($data)
+    /**
+     * Searches Orthanc with formated query
+     * 
+     * @param array $data
+     * @param boolean $returnData - returns search result does not display
+     * @param string $modality returns only defined modailty
+     * @return mixed|unknown|string[]|mixed[]|boolean[]|string[]
+     */
+    function searchOrthanc($data,$returnData=FALSE,$modality=NULL)
     {
+        
+        $modalitySearch = array();
         
         $query="";
         if (isset($data["queryDate"]) && strlen(trim($data["queryDate"]))>0){
@@ -287,23 +297,48 @@ class dicom extends main {
 
                         foreach ($study["Series"] as &$serie){
                             $res = $this->ot->getSeriesData($serie);
+                            
+                            
 
                             if ($res["status"]===false){
                                 return $res;
                             }
                             $serie = $res["result"];
+                            
+                            
+                            if ($modality!=NULL && strpos($serie["MainDicomTags"]["Modality"],$modality)!==FALSE){
+                                
+                                
+                               $modalitySearch[$study["ID"]] = $study;
+                            }
+                            
                         }
                     }
                 }
-                $this->smarty->assign_by_ref("result",$patientData);
+                if (!$returnData){
+                    $this->smarty->assign_by_ref("result",$patientData);
+                }
             }else{
                 $this->smarty->assign("noMatch","Nenajdené žiadne štúdie....");
             }
-
-            $this->smarty->display("series.tpl");
+            
+            if (!$returnData){    
+                $this->smarty->display("series.tpl");
+            }else{
+                if ($modality==NULL){
+                    return $patientData;
+                }else{
+                    return $modalitySearch;
+                }
+                    
+            }
         }
         else {
-            $this->smarty->display("searchP.tpl");
+            if (!$returnData){
+                $this->smarty->display("searchP.tpl");
+            }else{
+                return array("status"=>true,"result"=>"");
+            }
         }
 
     }
@@ -365,15 +400,15 @@ class dicom extends main {
 
         $dicomQuery = array(
                 "Level"=>"Study",
-                "Query"=>array("StudyDate"=>$dicomDate,"StudyTime"=>$dicomTime,"PatientName"=>""),
+                "Query"=>array("StudyDate"=>$dicomDate,"StudyTime"=>$dicomTime,"PatientName"=>"","ModalitiesInStudy"=>""),
         );
 
 
         $result = array();
         $this->log->logData("Starting QR Operation",false);
 
+        
         $res = $this->ot->queryAndRetrieve($dicomQuery, "TOMOCON");
-
 
         if ($res["status"]){
             $this->log->logData($result,true,"QR Result");
@@ -470,112 +505,59 @@ class dicom extends main {
         $this->log->logData("Delete completed sucsesfully",false,"",false);
     }
 
-    function searchByDateTimeModality($data,$modality=NULL)
-    {
-        //var_dump($modality);
-        $dicomDate=$data["dicomDate"];
-        $dicomTime=$data["dicomTime"];
-
-        $query = array("Level"=>"Study","Query"=>array());
-
-        if (!empty($dicomDate)){
-            $query["Query"]["StudyDate"]=$dicomDate;
-        }
-
-        if (!empty($dicomTime)){
-            $query["Query"]["StudyTime"]=$dicomTime;
-        }
-
-        if ($modality!==NULL){
-            $query["Query"]["Modality"]=$modality;
-        }
-        $res = $this->ot->searchOrthancByQuery($query);
-        $patientData = array();
-        if ($res["status"]===FALSE){
-            $this->smarty->assign("error",$res["result"]);
-        }else{
-            $studyNum=0;
-            foreach ($res["result"] as &$study){
-                $res2= $this->ot->getStudyByID($study);
-                $study = $res2["result"];
-
-                $study["MainDicomTags"]["StudyDate"] = $this->parseStudyDate($study["MainDicomTags"]["StudyDate"]);
-                $study["MainDicomTags"]["StudyTime"] = $this->parseStudyTime($study["MainDicomTags"]["StudyTime"]);
-                $serieNum=0;
-                foreach ($study["Series"] as &$serie){
-
-                    $res3 = $this->ot->getSeriesData($serie);
-                    if ($modality!==NULL && $modality!=="ALL" && strpos($modality,$res3["result"]["MainDicomTags"]["Modality"])!==FALSE){
-                        
-                         $serie = $res3["result"];
-                         
-                         $finalData[$studyNum] = $study;
-                    }else{
-                        if ($modality!=="ALL"){
-                            unset($study["Series"][$serieNum]);
-                        }
-                    }
-
-                    if ($modality==="ALL"){
-                        $serie = $res3["result"];
-                    }
-                    $serieNum++;
-                }
-                if ($modality==="ALL"){
-                    $finalData[] = $study;
-                }
-                $studyNum++;
-            }
-
-              // var_dump($finalData);
-            $this->smarty->assign("parameter",$data["parameter"]);
-            $this->smarty->assign_by_ref("result",$finalData);
-        }
-        $this->smarty->display("searchRes.tpl");
-    }
 
     function toDay(){
-        $data = array("dicomDate"=>date("Ymd"),"dicomTime"=>"");
-        $data["parameter"] = "Dnes";
-        $this->searchByDateTimeModality($data,"ALL");
+        
+        $data = array("queryDate"=>date("Ymd"));
+        $res = $this->searchOrthanc($data);
     }
 
     function toDayXA(){
-        $data = array("dicomDate"=>date("Ymd"),"dicomTime"=>"");
-        $data["parameter"] = "Dnes XA";
-
-        $this->searchByDateTimeModality($data,"XA");
+        $data = array("queryDate"=>date("Ymd"));
+        $res = $this->searchOrthanc($data,true,"XA");
+        
+        $this->displaySearchRes("Dnes XA", $res);
     }
 
     function todayCR(){
-        $data = array("dicomDate"=>date("Ymd"),"dicomTime"=>"");
-        $data["parameter"] = "Dnes RTG";
+        $data = array("queryDate"=>date("Ymd"));
+        $res = $this->searchOrthanc($data,true,"CR");
 
-        $this->searchByDateTimeModality($data,"CR");
+        $this->displaySearchRes("Dnes RTG", $res);
     }
 
     function yesterdayXA(){
         $dt = new DateTime();
+        
         $yesterday = $dt->modify("-1 day");
         $yStr = $yesterday->format("Ymd");
-        $data = array("dicomDate"=>$yStr,"dicomTime"=>"");
-        $data["parameter"] = "Včerajšie XA";
+        $data = array("queryDate"=>$yStr);
 
-        $this->searchByDateTimeModality($data,"XA");
+        
+        
+        $res = $this->searchOrthanc($data,true,"XA");
+        $this->displaySearchRes("Vcerajsie XA", $res);
     }
 
-    function lastHour()
+    /*function lastHour()
     {
         $dt = new DateTime();
         $hourDt = $dt->modify("-1 hour");
         $hour = $dt->format("Hi-");
         $today = date("Ymd");
-        $data = array("dicomDate"=>$today,"dicomTime"=>$hour);
+        $data = array("queryDate"=>$today,"dicomTime"=>$hour);
         $data["parameter"] = "Posledná hodina";
 
         $this->searchByDateTimeModality($data,"ALL");
-    }
+    }*/
     
+    
+    function displaySearchRes($parameter,$result)
+    {
+        $this->smarty->assign("parameter",$parameter);
+        $this->smarty->assign("result",$result);
+        $this->smarty->display("searchRes.tpl");
+    }
     
     function checkDbForPics($series)
     {
@@ -657,6 +639,44 @@ class dicom extends main {
             $res = $this->db->insert_rows("pic_data",$saveData);
             
             return $res;
+    }
+    
+    function pacs($request){
+        
+        
+        //var_dump($request);
+        
+        $query = array("Level"=>"Study","Query"=>array("StudyDate"=>"20160627","PatientName"=>"","StudyDescription"=>"","ModalitiesInStudy"=>""));
+        
+        $this->smarty->display("pacs.tpl");
+        
+        //$data = $this->ot->queryAndRetrieve($query, "TOMOCON");
+        
+    }
+    
+    function searchPacs($request)
+    {
+        
+        $query = array("Level"=>"Study","Query"=>array("PatientName"=>"","ModalitiesInStudy"=>"","StudyDate"=>""));
+        
+        
+        if (preg_match('/^[a-zA-Z]+/',$request["query"])) {
+            $query["Query"]["PatientName"] = $request["query"]."*";
+        }
+        
+        if (isset($request["queryDate"]) && !empty($request["queryDate"])){
+            $query["Query"]["StudyDate"] = $request["queryDate"];
+        }
+        $data = $this->ot->queryAndRetrieve($query, "TOMOCON");
+        
+        foreach ($data["result"] as &$row){
+            $row["StudyDate"] = $this->parseStudyDate($row["StudyDate"]);
+        }
+        
+        $this->smarty->assign("data",$data["result"]);
+        $this->smarty->display("pacs_res.tpl");
+        
+        
     }
     
 

@@ -47,6 +47,7 @@
 									<li><a href="{$orthancUrl}/app/explorer.html#series?uuid={$Series[$s].ID}" target="_blank">Plná info..</a></li>
 								</ul>
 							</td>
+							<td class="cell_{$Instance}" style="display:none;"><img width="80%" src="{$orthancUrl}/instances/{$Instance}/preview"></td>
 						</tr>
 					{/foreach}
 					{/if}
@@ -88,7 +89,7 @@
 							<li><a href="javascript:showPreview('{$Instance}','{$orthancUrl}');">Náhlad</a></li>
 							<li><a href="{$orthancUrl}/app/explorer.html#series?uuid={$Serie.ID}" target="_blank">Plná info..</a></li>
 						</ul>
-						
+						<td class="cell_{$Instance}" style="display:none;"><img width="80%" src="{$orthancUrl}/instances/{$Instance}/preview"></td>
 					</tr>
 					{/foreach}
 					{/if}

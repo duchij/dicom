@@ -1,10 +1,15 @@
 <?php
+require_once INCLUDE_DIR."orthanc.class.php";
 
 class jsOt extends main {
+    
+    var $ot;
 
     function __construct()
     {
         parent::__construct();
+        
+        $this->ot = new orthanc();
     }
 
     function loadSeries($data)
@@ -98,6 +103,13 @@ class jsOt extends main {
             return array("status"=>false,"result"=>$table["msg"][2]);
         }
         
+        
+    }
+    
+    function moveFromPacs($data)
+    {
+        
+        return $this->ot->moveQRData($data,"OSIRKDCH");
         
     }
     

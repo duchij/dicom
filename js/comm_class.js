@@ -450,6 +450,7 @@ function callProgressFnc(source,callBack, state,status)
 
 function __completedRequest(respond)
 {
+	
         var	resObj = JSON.parse(respond);
         //console.log(resObj);
         
