@@ -269,6 +269,8 @@ class dicom extends main {
             }
             if (preg_match('/^[0-9]{8}$/',$query)){
                 $res = $this->ot->searchOrthancBYDate($query);
+                
+                
                 if ($res["status"]){
                     $patientData = $res["result"];
                 }
@@ -278,15 +280,25 @@ class dicom extends main {
                 $this->smarty->display("series.tpl");
                 exit;
             }
+            
+            
+            
+            
             if (is_array($patientData) && count($patientData) > 0){
 
                 foreach ($patientData as &$patient){
 
                     $patient["MainDicomTags"]["PatientName"] = str_replace("^", " ", $patient["MainDicomTags"]["PatientName"]);
+                    
+                    if (!is_array($patient["Studies"])){
+                    	return array("status"=>false,"result"=>"No Patient studies found");
+                    }
+                    
                     foreach ($patient["Studies"] as &$study){
 
                         $res = $this->ot->getStudyByID($study);
 
+                        
                         if ($res["status"]===false){
                             return $res;
                         }
@@ -297,7 +309,6 @@ class dicom extends main {
 
                         foreach ($study["Series"] as &$serie){
                             $res = $this->ot->getSeriesData($serie);
-                            
                             
 
                             if ($res["status"]===false){
@@ -513,30 +524,52 @@ class dicom extends main {
     }
 
     function toDayXA(){
-        $data = array("queryDate"=>date("Ymd"));
-        $res = $this->searchOrthanc($data,true,"XA");
-        
-        $this->displaySearchRes("Dnes XA", $res);
+        $data = array("StudyDate"=>date("Ymd"),"Modality"=>"XA");
+        $res = $this->ot->searchOrthancByStudy($data);
+        $this->displaySearchResStudy("Dnes XA", $res);
     }
 
     function todayCR(){
-        $data = array("queryDate"=>date("Ymd"));
-        $res = $this->searchOrthanc($data,true,"CR");
+        $data = array("StudyDate"=>date("Ymd"),"Modality"=>"CR");
+        $res = $this->ot->searchOrthancByStudy($data);
 
-        $this->displaySearchRes("Dnes RTG", $res);
+        $this->displaySearchResStudy("Dnes RTG", $res);
+    }
+    
+    function lastHour(){
+    	
+    	$dt = new DateTime();
+    	
+    	$today = $dt->format("Ymd");
+    	$now = $dt->format("Hi00");
+    	$lastHour = $dt->modify("-3 hour");
+    	$lhStr = $lastHour->format("Hi00-");
+    	
+    	$data = array("StudyDate"=>$today,"StudyTime"=>$lhStr.$now,"Modality"=>"CR");
+    	
+    	$res = $this->ot->searchOrthancByStudy($data);
+    	
+    	return $res;
+    	
+    	    	
+    }
+    
+    
+    function todayCT(){
+        $data = array("StudyDate"=>date("Ymd"),"Modality"=>"CT");
+        
+        $res=$this->ot->searchOrthancByStudy($data);
+        $this->displaySearchResStudy("Dnešné CT", $res);
     }
 
     function yesterdayXA(){
         $dt = new DateTime();
-        
         $yesterday = $dt->modify("-1 day");
         $yStr = $yesterday->format("Ymd");
-        $data = array("queryDate"=>$yStr);
-
+        $data = array("StudyDate"=>$yStr,"Modality"=>"XA");
         
-        
-        $res = $this->searchOrthanc($data,true,"XA");
-        $this->displaySearchRes("Vcerajsie XA", $res);
+        $res = $this->ot->searchOrthancByStudy($data);
+        $this->displaySearchResStudy("Vcerajsie XA", $res);
     }
 
     /*function lastHour()
@@ -554,10 +587,28 @@ class dicom extends main {
     
     function displaySearchRes($parameter,$result)
     {
+    	
         $this->smarty->assign("parameter",$parameter);
         $this->smarty->assign("result",$result);
+        
         $this->smarty->display("searchRes.tpl");
     }
+    
+    
+    function displaySearchResStudy($parameter,$result)
+    {
+    	 
+    	if (count($result["result"])==0){
+    		$this->smarty->assign("noMatch","Nenajdene ziadne studie....");
+    		$this->smarty->display("series.tpl");
+    	}else{
+    		$this->smarty->assign("parameter",$parameter);
+    		$this->smarty->assign("result",$result["result"]);
+    
+    		$this->smarty->display("searchResStudy.tpl");
+    	}
+    }
+    
     
     function checkDbForPics($series)
     {
@@ -656,18 +707,86 @@ class dicom extends main {
     
     function searchPacs($request)
     {
-        
-        $query = array("Level"=>"Study","Query"=>array("PatientName"=>"","ModalitiesInStudy"=>"","StudyDate"=>""));
-        
-        
-        if (preg_match('/^[a-zA-Z]+/',$request["query"])) {
-            $query["Query"]["PatientName"] = $request["query"]."*";
+    	
+    	
+    	if (!array_key_exists("queryType",$request)){
+    		$this->smarty->assign("errorMsg","No query type given....");
+    		$this->smarty->display("pacs.tpl");
+    		 
+    		return;
+    	}
+    	
+    	
+    	if (!array_key_exists("query", $request)){
+    		
+    		$this->smarty->assign("errorMsg","No query data given....");
+    		$this->smarty->display("pacs.tpl");
+    		 
+    		return;
+    	}
+    	
+    	
+        if (strlen(trim($request["query"])) == 0){
+        	$this->smarty->assign("errorMsg","No query data given....");
+        	$this->smarty->display("pacs.tpl");
+        	
+        	return;
         }
+        
+    	$query = array("Level"=>"Study","Query"=>array("PatientName"=>"","ModalitiesInStudy"=>"","StudyDate"=>"","PatientID"=>""));
+    	
+    	switch( $request["queryType"] ){
+    		
+    		
+    		case "name":
+    			
+    			$request["query"] = str_replace(array("\\","/"), array("",""), $request["query"]);
+    			
+    			if (preg_match('/^[a-zA-Z]+/',$request["query"])) {
+    				$query["Query"]["PatientName"] = $request["query"]."*";
+    			}
+    			else{
+    				$this->smarty->assign("errorMsg","Name must contain only letters...");
+    				$this->smarty->display("pacs.tpl");
+    				 
+    				return;
+    			}
+    			
+    			break;
+    		case "binNum":
+    			if (preg_match("/[0-9]+/",$request["query"]) ){
+    				
+    				$query["Query"]["PatientID"] = $request["query"];
+    			
+    			}else{
+    				
+    				$this->smarty->assign("errorMsg","No valid bin number....");
+    				$this->smarty->display("pacs.tpl");
+    					
+    				return;
+    			}
+    			
+    			break;
+    		
+    	}
         
         if (isset($request["queryDate"]) && !empty($request["queryDate"])){
             $query["Query"]["StudyDate"] = $request["queryDate"];
         }
+        
         $data = $this->ot->queryAndRetrieve($query, "TOMOCON");
+        
+        //var_dump($data);
+        
+       // exit;
+        
+        if ($data["status"] === FALSE){
+        	$this->smarty->assign("errorMsg",$data["result"]);
+        	$this->smarty->display("pacs.tpl");
+        	return;
+        	
+        }
+        
         
         foreach ($data["result"] as &$row){
             $row["StudyDate"] = $this->parseStudyDate($row["StudyDate"]);
@@ -678,6 +797,8 @@ class dicom extends main {
         
         
     }
+    
+    
     
 
 }

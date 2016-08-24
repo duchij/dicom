@@ -69,11 +69,15 @@ class orthanc extends main {
             }
         }
         $result = curl_exec($ch);
-        curl_close($ch);
-        if ($result===FALSE){
+        
+        
+        if (curl_errno($ch)){
+        	
             $errNo = curl_errno($ch);
+            curl_close($ch);
             return $this->resultStatus(false,curl_strerror($errNo));
         }else{
+        	curl_close($ch);
             return $this->resultStatus(true,json_decode($result,true));
         }
     }
@@ -88,12 +92,11 @@ class orthanc extends main {
      */
     public function queryAndRetrieve($queryObject,$modality)
     {
-        
+       
         $url = O_C_URL."/modalities/".$modality."/query";
-        
+      
 
         $res = $this->_curl_c($url,$queryObject);
-        
         
 
         if ($res["status"] === FALSE){
@@ -105,18 +108,22 @@ class orthanc extends main {
         $url = O_C_URL.$queryData["Path"]."/answers";
 
         $ansArr = $this->getContent2($url);
+        
+
+        
 
         if ($ansArr["status"]===false){
             return $this->resultStatus(false,$ansArr);
         }
 
         $resData = array();
+        
         foreach ($ansArr["result"] as $key=>$value) {
             $url = O_C_URL.$queryData["Path"]."/answers/".$value."/content";
             
             $dataTmp = $this->getContent2($url);
 
-            if ($dataTmp["status"]===false){
+            if ($dataTmp["status"] === false){
                 return $this->resultStatus(false, $dataTmp["result"]);
             }
 
@@ -129,7 +136,8 @@ class orthanc extends main {
 
             $resData[] = $tmpArr;
         }
-        
+        //var_dump(array($url,$resData));
+        //exit;
         
         return $this->resultStatus(true, $resData);
     }
@@ -145,7 +153,7 @@ class orthanc extends main {
         $result = curl_exec($ch);
         curl_close($ch);
 
-        if ($result===FALSE){
+        if ($result === FALSE){
             $er = curl_errno($ch);
             return array("status"=>false,"result"=>curl_strerror($er));
         }
@@ -427,9 +435,12 @@ class orthanc extends main {
     	$data = curl_exec($ch);
     	
         curl_close($ch);
-        if ($data===FALSE){
+        
+        if ($data === FALSE){
+        	
             $er = curl_errno($ch);
             return $this->resultStatus(false,curl_strerror($er));
+        
         }else{
             return $this->resultStatus(true, json_decode($data,true));
         }
@@ -550,13 +561,13 @@ class orthanc extends main {
 
     }
 
-    public function getDicomInstances($data)
+    /*public function getDicomInstances($data)
     {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, false);
 
         $ch = curl_init($this->url."/instance");
-    }
+    }*/
 
 
 
@@ -579,6 +590,57 @@ class orthanc extends main {
         }
 
     }
+    
+    
+    
+    public function searchOrthancByStudy($query)
+    {
+    	$url = $this->url."/tools/find";
+    	
+    	
+    	if (!array_key_exists("StudyTime", $query)){
+	    	$searchQuery = array(
+	    		"Level"=>"Study",
+	    		"Query"=>array("StudyDate"=>$query["StudyDate"],"ModalitiesInStudy"=>$query["Modality"]),
+	    	);
+    	}else{
+    		$searchQuery = array(
+    			"Level"=>"Study",
+    			"Query"=>array("StudyDate"=>$query["StudyDate"],"StudyTime"=>$query["StudyTime"],"ModalitiesInStudy"=>$query["Modality"]),
+    		);
+    	}
+    	
+    	$searchStr = json_encode($searchQuery);
+    	
+    	$ch = curl_init($url);
+    	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    	curl_setopt($ch, CURLOPT_HEADER, false);
+    	curl_setopt($ch, CURLOPT_POSTFIELDS,$searchStr);
+    	$data = curl_exec($ch);
+    	// curl_close($ch);
+    	
+    	if (curl_errno($ch)) {
+    		 
+    		$er = curl_errno($ch);
+    		curl_close($ch);
+    		return array("status"=>false,"result"=>curl_strerror($er));
+    	}else{
+    		$result = json_decode($data,true);
+    	
+    		foreach ($result as &$sID){
+    			$res2 = $this->getStudyByID($sID);
+    			$sID = $res2["result"];
+    			
+    				foreach ($sID["Series"] as &$serie){
+    					$res4 = $this->getSeriesData($serie);
+    					$serie = $res4["result"];
+    				}
+    				
+    			}
+    		}
+    		curl_close($ch);
+    		return $this->resultStatus(true, $result);
+    }
 
     /** Searches Orthanc server for PatientName in REST Call Api /tools/find
      * @param PatientName $name Name of Patient, may contain *
@@ -600,9 +662,12 @@ class orthanc extends main {
         curl_setopt($ch, CURLOPT_HEADER, false);
         curl_setopt($ch, CURLOPT_POSTFIELDS,$searchStr);
         $data = curl_exec($ch);
-        curl_close($ch);
-        if ($data === FALSE){
+       // curl_close($ch);
+        
+        if (curl_errno($ch)) {
+        	
             $er = curl_errno($ch);
+            curl_close($ch);
             return array("status"=>false,"result"=>curl_strerror($er));
         }else{
             $result = json_decode($data,true);
@@ -617,7 +682,7 @@ class orthanc extends main {
                     $patientData[] = $this->resultData($res);
                 }
             }
-
+            curl_close($ch);
             return $this->resultStatus(true, $patientData);
         }
 

@@ -17,9 +17,6 @@
 	</div>
 	<div id="divider"></div>
 	{foreach from=$result item=study key=p}
-	
-	
-	
 		{assign var="Series" value=$study.Series}
 		<div class="patientRes">
 			Meno pacienta: <strong>{$study.PatientMainDicomTags.PatientName}</strong><br>

@@ -28,9 +28,12 @@ class main {
     var $db;
 
     var $url;
+    
+    
+    var $runClassStr;
 
-    function __construct(){
-
+    function __construct($className=""){
+ 
         $this->log = new log();
 
         $this->db = new db();
@@ -51,6 +54,11 @@ class main {
         $this->smarty->assign("router",ROUTER);
 
         $this->commJs = new commJs();
+        
+        if ($className!="")
+        {
+        	$this->runClassStr = $className;
+        }
         
 
     }
@@ -122,7 +130,6 @@ class main {
                         $this->smarty->display("main.tpl");
                         exit;
                     }
-
                 }
             }
             else
@@ -134,8 +141,23 @@ class main {
         }
         else  //fallback trieda
         {
-           $this->smarty->display("main.tpl");
-           //echo "No sync class defined exiting";
+        	$dicom = $this->loadObject("dicom");
+        	$res = $dicom->lastHour();
+        	
+        	if ($res["status"]!==FALSE){
+        		
+        		
+        		foreach ($res["result"] as &$study){
+        			
+        			$study["MainDicomTags"]["StudyDate"] = $dicom->parseStudyDate($study["MainDicomTags"]["StudyDate"]);
+        			$study["MainDicomTags"]["StudyTime"] = $dicom->parseStudyTime($study["MainDicomTags"]["StudyTime"]);
+        		}
+        		
+        		$this->smarty->assign("result",$res["result"]);
+        		
+        	}
+        	
+        	$this->tplOutput("result.tpl");
         }
     }
     
@@ -148,6 +170,16 @@ class main {
         $this->smarty->display("main.tpl");
         exit;
     }
+    
+    function tplOutput($templateFile)
+    {
+    	//var_dump($this);
+    	$this->smarty->assign("className",$this->runClassStr.".js");
+    	$this->smarty->assign("body",$templateFile);
+    	$this->smarty->display("main.tpl");
+    }
+    
+    
     
 
 }

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--<key>KeepAlive</key>
+	<true/>-->
+    <key>Label</key>
+    <string>com.dicom.day</string>
+    <key>OtherJobEnabled</key>
+    <dict>
+	<key>com.orthanc.job</key>
+	<true/>
+    </dict>
+    <key>ProgramArguments</key>
+    <array>
+	<string>/usr/bin/curl</string>
+	<string>http://10.10.2.49/dicom/index.php</string>
+	<string>-d</string>
+	<string>c=dicom</string>
+	<string>-d</string>
+	<string>m=autoQueryRetrieve</string>
+	<string>-d</string> 
+ 	<string>filterDate=last_1_day</string>
+	<string>--trace-ascii</string> 
+	<string>/Users/admin/dicom_day.log</string>
+	<string>--trace-time</string>
+</array>
+	<!--<key>StandardOutPath</key> 
+	<string>/Users/admin/dicom.stdout</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/admin/dicom.error</string>-->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>6</integer>
+	<key>Minute</key>
+	<integer>0</integer>
+    </dict>
+</dict>
+</plist>

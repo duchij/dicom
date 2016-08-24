@@ -1,13 +1,17 @@
 
+var contrastStatus = {};
+var brightnessStatus = {};
+
 var selectedPicData = {};
+
 
 
 var Instances =[];
 
 var sliderData = {};
 
-var dicomDir = "http://dicom.local/public/dicom/pictures/";
-var dCacheDir = "http://dicom.local/public/";
+var dicomDir = "http://10.10.2.49/dicom/public/dicom/pictures/";
+var dCacheDir = "http://10.10.2.49/dicom/public/";
 
 var cache = false;
 
@@ -31,7 +35,7 @@ function clone(obj){
     return temp;
 }
 
-
+http://is.kdch.sk/hlasko.aspx
 function copy_object(obj)
 {
 	//return copyObject(obj);
@@ -183,22 +187,29 @@ function dragging(e,ui,cache){
 		var viewHeight = instance.file_info.height*hRatio;
 		
 		
-		ctx.drawImage(img,0,0,viewWidth,viewHeight);
+		img.onload = function (){
+			ctx.drawImage(img,0,0,viewWidth,viewHeight);
+			
+			var hiddenCanvas = document.getElementById("hiddenPlayer");
+			var hiddenCtx = hiddenCanvas.getContext("2d");
 		
-		var hiddenCanvas = document.getElementById("hiddenPlayer");
-		var hiddenCtx = hiddenCanvas.getContext("2d");
+			hiddenCtx.drawImage(img,0,0,viewWidth,viewHeight);
+			hiddenCtx.fill();
 		
-		hiddenCtx.drawImage(img,0,0,viewWidth,viewHeight);
+			if (this.contrastStatus.value != undefined){
+				changeContrast(e,this.contrastStatus);
+			}
+		
+			if (this.brightnessStatus.value != undefined){
+				changeBrightness(e,this.brightnessStatus);
+			}
+		}
 	}
 }
 
 
 function changeContrast(e,ui)
 {
-	
-	console.log(ui.value);
-	
-	//return;
 	
 	
 	var canvas = document.getElementById("player");
@@ -208,10 +219,6 @@ function changeContrast(e,ui)
 	var hiddenCtx = hiddenCanvas.getContext("2d");
 	
 	var imageData= hiddenCtx.getImageData(0,0,this.__width,this.__height);
-	
-	//console.log(imageData);
-	//return;
-	
 	
 	
 	var dataLn = imageData.data.length;
@@ -238,10 +245,12 @@ function changeContrast(e,ui)
 	imageData.data = data;
 	
 	ctx.putImageData(imageData,0,0);
+	ctx.fill();
 }
 
 function changeBrightness(e,ui)
 {
+	console.log([e,ui]);
 	var canvas = document.getElementById("player");
 	var ctx = canvas.getContext("2d");
 	
@@ -267,6 +276,8 @@ function changeBrightness(e,ui)
 	imageData.data = data;
 	
 	ctx.putImageData(imageData,0,0);
+	
+	ctx.fill();
 }
 
 
@@ -280,15 +291,17 @@ function dirStructure(instance){
 
 function loadSeriesData(series,cache)
 {
+	this.init();
+	
 	var t=new js_comunication();
 	//var series = $("input[id$=series]").val();
 	if (cache === "1"){
 		
-		t.addRawRequest("http://dicom.local/index.php","jsOt/loadDataFromDb",this,[{series:series},"afterGetDataFromDb"]);
+		t.addRawRequest("index.php","jsOt/loadDataFromDb",this,[{series:series},"afterGetDataFromDb"]);
 		
 	}else{
 		
-		t.addRawRequest("http://dicom.local/index.php","jsOt/loadSeriesInstancesAsync",this,[{series:series},"afterLoadSeries"]);
+		t.addRawRequest("index.php","jsOt/loadSeriesInstancesAsync",this,[{series:series},"afterLoadSeries"]);
 		
 	}
 	t.sendData();
@@ -321,7 +334,6 @@ function initSlider(frCount,cache){
 
 function afterGetDataFromDb(status,result)
 {
-	console.log([status,result]);
 	if (status){
 		if (result.length > 0){
 			
@@ -339,6 +351,8 @@ function afterGetDataFromDb(status,result)
 			
 			
 			var url = this.dCacheDir+file;
+			console.log("url:"+url);
+			
 			var canvas = document.getElementById("player");
 			
 			var ctx = canvas.getContext("2d");
@@ -349,16 +363,16 @@ function afterGetDataFromDb(status,result)
 			var viewWidth = imageData.width*wRatio;
 			var viewHeight = imageData.height*hRatio;
 			
-			ctx.drawImage(img,0,0,viewWidth,viewHeight);
+			img.onload = function (){
+				ctx.drawImage(img,0,0,viewWidth,viewHeight);
+				
+				var hiddenCanvas = document.getElementById("hiddenPlayer");
+				var hiddenCtx = hiddenCanvas.getContext("2d");
 			
-			
-			
-			var hiddenCanvas = document.getElementById("hiddenPlayer");
-			var hiddenCtx = hiddenCanvas.getContext("2d");
-			
-			hiddenCtx.drawImage(img,0,0,viewWidth,viewHeight);
-			
-			
+				hiddenCtx.drawImage(img,0,0,viewWidth,viewHeight);
+				hiddenCtx.fill();
+				
+			}
 		}
 	}
 }
@@ -388,16 +402,26 @@ function afterLoadSeries(status,result)
 		
 		var img = new Image();
 		img.src = url;
-		ctx.drawImage(img,0,0,10,20);
-	
+		img.onload = function() {
+			ctx.drawImage(img,0,0,10,20);
+			ctx.fill();
+		}
+		
+		
 		
 	}
+}
+
+function hidePic(id)
+{
+	$("."+id).css("display","none");
 }
 
 function pacsMove(path,rId)
 {
 	
 	var t= new js_comunication();
+	
 	$("#indi_"+rId).css("display","inline");
 	
 	t.addRawRequest("index.php","jsOt/moveFromPacs",this,[{path:path,rId:rId},"afterMoveStudy"]);
@@ -407,6 +431,8 @@ function pacsMove(path,rId)
 
 function afterMoveStudy(status,result)
 {
+	console.log([status,result]);
+	
 	if (status){
 		$("#row_"+result).remove();
 	}
@@ -422,28 +448,27 @@ function init()
 	
 	
 	$("#contrastSlider").slider({
-		min:0,
+		min:-100,
 		max:100
 	
 	});
 	
 	$("#contrastSlider").on("slide",function(e,ui){
+			contrastStatus = ui;
 			changeContrast(e,ui);
 	});
 	
 
 	$("#brightnessSlider").slider({
-		min:-255,
-		max:255
+		min:-100,
+		max:100
 	
 	});
 	
 	$("#brightnessSlider").on("slide",function(e,ui){
+			brightnessStatus = ui;
 			changeBrightness(e,ui);
 	});
-	
-	
-	
 	
 	//loadSeriesData();
 	$("#dialog").dialog();
@@ -455,4 +480,12 @@ function init()
 
 $(document).ready(function(){
 	init();
+	var mviewer = $("#mviewer").val();
+	if (mviewer === "1") {
+		var cache = $("#mviewer_cache").val();
+		var uuid = $("#series").val();
+		loadSeriesData(uuid,cache);
+	}
+	
+	
 });

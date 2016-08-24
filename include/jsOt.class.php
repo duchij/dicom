@@ -108,6 +108,9 @@ class jsOt extends main {
     
     function moveFromPacs($data)
     {
+    	
+    	//return var_dump($data);
+    	
         
         return $this->ot->moveQRData($data,"OSIRKDCH");
         

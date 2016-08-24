@@ -8,11 +8,18 @@
 	<li><strong>Dátumu</strong> </li>
 </ul> 
 
-<form action="{$web_url}/index.php?c=dicom&m=searchOrthanc" method="POST">
-	Priezvisko/Rodné číslo<input type="text" name="query" value=""><br>
-	Dátum:<input type="text" id="datePicker" name="queryDate" style="width:100px;">
-	<input type="submit" value="Hľadaj" class="searchSubmit">
-	
+<form action="{$webUrl}index.php?c=dicom&m=searchOrthanc" method="POST">
+<table>
+	<tr>
+		<td>Priezvisko/Rodné číslo</td><td><input type="text" name="query" value=""></td>
+	</tr>
+	<tr>
+	<td>Dátum:</td><td><input type="text" id="datePicker" name="queryDate" style="width:100px;"></td>
+	</tr>
+	<tr>
+	<td colspan="2">	<input type="submit" value="Hľadaj" class="searchSubmit"></td>
+	</tr>
+</table>	
 </form>
 
 
