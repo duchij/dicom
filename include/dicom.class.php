@@ -10,9 +10,26 @@ class dicom extends main {
 
 
     function __construct(){
-        parent::__construct();
+        parent::__construct("dicom");
 
         $this->ot = new orthanc();
+    }
+    
+    
+    
+    public function js_loadDataFromDb($data)
+    {
+    	return $this->loadDataFromDb($data);
+    }
+    
+    public function js_loadSeriesInstancesAsync($data)
+    {
+    	return $this->loadSeriesInstancesAsync($data);
+    }
+    
+    public function js_getInstanceTags($data)
+    {
+    	return $this->getInstanceTags($data);
     }
 
 
@@ -138,15 +155,18 @@ class dicom extends main {
 
         $this->ot->debug($res);
 
-        if ($res["status"])
+        if ($res["status"] !== FALSE)
         {
             $this->smarty->assign("QRData",$res["result"]);
+            $this->tplOutput("dicom/query.tpl");
         }
         else {
-            $this->smarty->assign("Error",$res["result"]);
+        	
+            $this->tplOutError("",$res["result"]);
+            return;
         }
 
-        $this->smarty->display("query.tpl");
+        
     }
 
 
@@ -206,6 +226,7 @@ class dicom extends main {
      */
     function searchOrthanc($data,$returnData=FALSE,$modality=NULL)
     {
+    	
         
         $modalitySearch = array();
         
@@ -277,11 +298,11 @@ class dicom extends main {
             }
             if (!isset($patientData)){
                 $this->smarty->assign("noMatch","Nenajdené žiadne štúdie....");
-                $this->smarty->display("series.tpl");
+                $this->tplOutput("dicom/series.tpl");
                 exit;
             }
             
-            
+           // var_dump($patientData);
             
             
             if (is_array($patientData) && count($patientData) > 0){
@@ -308,8 +329,8 @@ class dicom extends main {
                         $study["MainDicomTags"]["StudyTime"] = $this->parseStudyTime($study["MainDicomTags"]["StudyTime"]);
 
                         foreach ($study["Series"] as &$serie){
+                        	
                             $res = $this->ot->getSeriesData($serie);
-                            
 
                             if ($res["status"]===false){
                                 return $res;
@@ -317,8 +338,7 @@ class dicom extends main {
                             $serie = $res["result"];
                             
                             
-                            if ($modality!=NULL && strpos($serie["MainDicomTags"]["Modality"],$modality)!==FALSE){
-                                
+                            if ($modality!=NULL && strpos($serie["MainDicomTags"]["Modality"],$modality) !==FALSE ){
                                 
                                $modalitySearch[$study["ID"]] = $study;
                             }
@@ -334,7 +354,7 @@ class dicom extends main {
             }
             
             if (!$returnData){    
-                $this->smarty->display("series.tpl");
+                $this->tplOutput("dicom/series.tpl");
             }else{
                 if ($modality==NULL){
                     return $patientData;
@@ -346,7 +366,7 @@ class dicom extends main {
         }
         else {
             if (!$returnData){
-                $this->smarty->display("searchP.tpl");
+                $this->tplOutput("dicom/searchP.tpl");
             }else{
                 return array("status"=>true,"result"=>"");
             }
@@ -457,13 +477,9 @@ class dicom extends main {
 
 
     public function searchForm($data){
-        $this->smarty->display("searchP.tpl");
+        $this->tplOutput("dicom/searchP.tpl");
     }
 
-    function runAsync($data)
-    {
-        $this->commJs->getRespond($data["data"], "rjson");
-    }
 
 
     function delStudies($data){
@@ -524,12 +540,15 @@ class dicom extends main {
     }
 
     function toDayXA(){
-        $data = array("StudyDate"=>date("Ymd"),"Modality"=>"XA");
+
+    	$data = array("StudyDate"=>date("Ymd"),"Modality"=>"XA");
         $res = $this->ot->searchOrthancByStudy($data);
+        
         $this->displaySearchResStudy("Dnes XA", $res);
     }
 
     function todayCR(){
+    	
         $data = array("StudyDate"=>date("Ymd"),"Modality"=>"CR");
         $res = $this->ot->searchOrthancByStudy($data);
 
@@ -550,7 +569,6 @@ class dicom extends main {
     	$res = $this->ot->searchOrthancByStudy($data);
     	
     	return $res;
-    	
     	    	
     }
     
@@ -591,21 +609,24 @@ class dicom extends main {
         $this->smarty->assign("parameter",$parameter);
         $this->smarty->assign("result",$result);
         
-        $this->smarty->display("searchRes.tpl");
+        $this->smarty->display("dicom/searchRes.tpl");
     }
     
     
     function displaySearchResStudy($parameter,$result)
     {
     	 
-    	if (count($result["result"])==0){
+    	if (count($result["result"]) == 0){
+    		
     		$this->smarty->assign("noMatch","Nenajdene ziadne studie....");
-    		$this->smarty->display("series.tpl");
+    		$this->tplOutput("dicom/series.tpl");
+    	
     	}else{
+    	
     		$this->smarty->assign("parameter",$parameter);
     		$this->smarty->assign("result",$result["result"]);
-    
-    		$this->smarty->display("searchResStudy.tpl");
+    		$this->tplOutput("dicom/searchResStudy.tpl");
+
     	}
     }
     
@@ -615,9 +636,7 @@ class dicom extends main {
         $sql  = "SELECT COUNT([series_UUID]) AS [rows] FROM [pic_data] WHERE [series_uuid]={series|s}";
 
         $rep = array("series"=>$series);
-        
         $sql=$this->db->buildSql($sql,$rep);
-        
         $res = $this->db->row($sql);
         
         return $res;
@@ -633,18 +652,18 @@ class dicom extends main {
             
             $this->smarty->assign("series",$data["seriesUUID"]);
             $this->smarty->assign("cache","1");
-            $this->smarty->display("mviewer.tpl");
+            $this->tplOutput("dicom/mviewer.tpl");
             
         }
         else{
             $res1 = $this->ot->getSeriesData($data["seriesUUID"]);
             
             if ($res1["status"]==FALSE){
-                $this->showErrorMsg($res1["result"]);
+                $this->tplOutError("",$res1["result"]);
+                return;
             }
             
             $res = $this->ot->createFilesFromSeriesInstances($res1["result"]);
-            //  var_dump($res);
             
             if ($res){
             
@@ -654,15 +673,20 @@ class dicom extends main {
             
                 $dbRes = $this->saveDataToDb($res, $data["seriesUUID"], $expireDate);
             
-                if ($dbRes["status"]==false){
-                    $this->showErrorMsg($dbRes["result"]);
+                if ($dbRes["status"] === FALSE){
+                	
+                    $this->tplOutError("",$dbRes["result"]);
+                    return;
+                    
                 }
             
-            
                 $this->smarty->assign("series",$data["seriesUUID"]);
-                $this->smarty->display("mviewer.tpl");
+                $this->tplOutput("dicom/mviewer.tpl");
+
             }else{
-                $this->showErrorMsg("No pictures created.....");
+            	
+                $this->tplOutError("","No pictures created.....");
+                return;
             } 
         }
         
@@ -694,46 +718,35 @@ class dicom extends main {
     
     function pacs($request){
         
-        
-        //var_dump($request);
-        
-        $query = array("Level"=>"Study","Query"=>array("StudyDate"=>"20160627","PatientName"=>"","StudyDescription"=>"","ModalitiesInStudy"=>""));
-        
-        $this->smarty->display("pacs.tpl");
-        
-        //$data = $this->ot->queryAndRetrieve($query, "TOMOCON");
+        $this->tplOutput("dicom/pacs.tpl");
         
     }
     
     function searchPacs($request)
     {
     	
-    	
     	if (!array_key_exists("queryType",$request)){
-    		$this->smarty->assign("errorMsg","No query type given....");
-    		$this->smarty->display("pacs.tpl");
-    		 
+    		
+    		$this->tplOutError("dicom/pacs.tpl","No query type given....");
     		return;
+    		
     	}
-    	
     	
     	if (!array_key_exists("query", $request)){
     		
-    		$this->smarty->assign("errorMsg","No query data given....");
-    		$this->smarty->display("pacs.tpl");
-    		 
+    		$this->tplOutError("dicom/pacs.tpl","No query data given....");
     		return;
+    		
     	}
     	
-    	
         if (strlen(trim($request["query"])) == 0){
-        	$this->smarty->assign("errorMsg","No query data given....");
-        	$this->smarty->display("pacs.tpl");
         	
+        	$this->tplOutError("dicom/pacs.tpl","No query data given....");
         	return;
+        	
         }
         
-    	$query = array("Level"=>"Study","Query"=>array("PatientName"=>"","ModalitiesInStudy"=>"","StudyDate"=>"","PatientID"=>""));
+    	$query = array("Level"=>"Study","Query"=>array("PatientName"=>"","ModalitiesInStudy"=>"","StudyDate"=>"","PatientID"=>"","StudyTime"=>""));
     	
     	switch( $request["queryType"] ){
     		
@@ -746,12 +759,10 @@ class dicom extends main {
     				$query["Query"]["PatientName"] = $request["query"]."*";
     			}
     			else{
-    				$this->smarty->assign("errorMsg","Name must contain only letters...");
-    				$this->smarty->display("pacs.tpl");
-    				 
+    				
+    				$this->tplOutError("dicom/pacs.tpl","Name must contain only letters...");
     				return;
     			}
-    			
     			break;
     		case "binNum":
     			if (preg_match("/[0-9]+/",$request["query"]) ){
@@ -760,9 +771,7 @@ class dicom extends main {
     			
     			}else{
     				
-    				$this->smarty->assign("errorMsg","No valid bin number....");
-    				$this->smarty->display("pacs.tpl");
-    					
+    				$this->tplOutError("dicom/pacs.tpl","No valid bin number....");
     				return;
     			}
     			
@@ -776,30 +785,68 @@ class dicom extends main {
         
         $data = $this->ot->queryAndRetrieve($query, "TOMOCON");
         
-        //var_dump($data);
-        
-       // exit;
         
         if ($data["status"] === FALSE){
-        	$this->smarty->assign("errorMsg",$data["result"]);
-        	$this->smarty->display("pacs.tpl");
+        	$this->tplOutError("dicom/pacs.tpl",$data["result"]);
         	return;
-        	
         }
         
         
         foreach ($data["result"] as &$row){
             $row["StudyDate"] = $this->parseStudyDate($row["StudyDate"]);
+            $row["StudyTime"] = $this->parseStudyTime($row["StudyTime"]);
         }
         
         $this->smarty->assign("data",$data["result"]);
-        $this->smarty->display("pacs_res.tpl");
+        $this->tplOutput("dicom/pacs_res.tpl");
         
         
     }
     
     
     
+    function loadDataFromDb($data)
+    {
+    	
+    	$res= $this->ot->getSeriesData($data["series"]);
+    	
+    	
+    	$series = $data["series"];
+    
+    	$sql = "SELECT [file_location],[file_info] FROM [pic_data] WHERE [series_uuid]={series|s} ORDER BY [order] ASC";
+    	$rep = array("series"=>$data["series"]);
+    
+    	$sql= $this->db->buildSql($sql, $rep);
+    
+    	$table = $this->db->table($sql);
+    
+    	if ($table["status"]){
+    
+    		foreach ($table["table"] as &$row){
+    			$row["file_info"] = unserialize($row["file_info"]);
+    		}
+    		return array("status"=>true,"result"=>array("file"=>$table["table"],"dicom"=>$res["result"]));
+    	}else{
+    		return array("status"=>false,"result"=>$table["msg"][2]);
+    	}
+    
+    
+    }
+    
+    function loadSeriesInstancesAsync($data)
+    {
+    
+    	$res= $this->ot->getSeriesData($data["series"]);
+    	return $res;
+    }
+    
+    
+    function getInstanceTags($data)
+    {
+    	return $this->ot->getInstanceSimplifiedTags($data["uuid"]);
+    }
 
 }
+
+return "dicom";
 ?>

@@ -12,17 +12,17 @@
 <!-- <script type="text/javascript" src="{$GLOBALS.APP_URL}/js/myfnc.js"></script> -->
 <script src="js/comm_class.js" type="text/javascript"></script>
 <!-- <script src="js/pss.js" type="text/javascript"></script> -->
-<script src="tinymce/tinymce.min.js" type="text/javascript"></script>
+<!-- <script src="tinymce/tinymce.min.js" type="text/javascript"></script> -->
 <script src="js/main.js" type="text/javascript"></script>
 
 <script>
-	tinymce.init({ 
+	/*tinymce.init({ 
 					selector:'textarea',
 					menubar:false,
-					toolbar:'bold italic | alignleft alignright alignjustify' });
+					toolbar:'bold italic | alignleft alignright alignjustify' });*/
 
 	mainInit({
-				class:{/literal}"{$className}"{literal}
+				class:{/literal}'{$className}'{literal}
 		});
 	
 

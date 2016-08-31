@@ -1,7 +1,8 @@
 
 function mainInit(settings)
 {
-	console.log(settings);
+	//console.log(settings);
+	
 	loadJsFileForClass(settings);
 }
 

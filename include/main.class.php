@@ -103,6 +103,8 @@ class main {
      */
     public function run($data)
     {
+    	
+    	
         
         if (isset($data["x"])&& $data["x"]=="1"){
             $this->runAsync($data);
@@ -144,6 +146,8 @@ class main {
         	$dicom = $this->loadObject("dicom");
         	$res = $dicom->lastHour();
         	
+       
+        	
         	if ($res["status"]!==FALSE){
         		
         		
@@ -156,12 +160,14 @@ class main {
         		$this->smarty->assign("result",$res["result"]);
         		
         	}
-        	
-        	$this->tplOutput("result.tpl");
+        	$this->runClassStr = "dicom";
+        	$this->tplOutput("dicom/result.tpl");
         }
     }
     
     function runAsync($data){
+    	
+    	
         $this->commJs->getRespond($data["data"],"rjson");
     }
     
@@ -173,9 +179,22 @@ class main {
     
     function tplOutput($templateFile)
     {
-    	//var_dump($this);
     	$this->smarty->assign("className",$this->runClassStr.".js");
     	$this->smarty->assign("body",$templateFile);
+    	$this->smarty->display("main.tpl");
+    }
+    
+    function tplOutError($templateFile,$error)
+    {
+    
+    	$errorMsg="<div class='row error box large'>{$error}</div>";
+    	$this->smarty->assign("errorMsg",$errorMsg);
+    	$this->smarty->assign("className",$this->runClassStr.".js");
+    	
+    	if (!empty($templateFile)){
+    		$this->smarty->assign("body",$templateFile);
+    	}
+    	
     	$this->smarty->display("main.tpl");
     }
     

@@ -202,6 +202,7 @@ class commJs {
             $class = require_once INCLUDE_DIR.$module.".class.php";
     
             $obj = new $class();
+            
             $GLOBALS[$module] = $obj;
     
             return $obj;

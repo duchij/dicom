@@ -1,0 +1,37 @@
+#create folder data in app main root
+#then in shell 
+#sqlite3 dicom
+#
+#and create theese tables
+
+
+
+CREATE TABLE "pic_data" (
+  "series_uuid" text(45) COLLATE 'RTRIM' NOT NULL,
+  "instance_uuid" text(45) COLLATE 'RTRIM' NOT NULL,
+  "file_location" text COLLATE 'RTRIM' NOT NULL,
+  "file_info" blob NOT NULL,
+  "order" numeric NOT NULL,
+  "expire" numeric NOT NULL
+);
+CREATE INDEX "pic_data_expire" ON "pic_data" ("expire");
+CREATE INDEX "pic_data_order" ON "pic_data" ("order");
+CREATE INDEX "pic_data_instance_uuid" ON "pic_data" ("instance_uuid");
+CREATE INDEX "pic_data_series_uuid" ON "pic_data" ("series_uuid");
+CREATE UNIQUE INDEX "pic_data_series_uuid_instance_uuid" ON "pic_data" ("series_uuid", "instance_uuid");
+
+
+CREATE TABLE "pic_data" (
+  "series_uuid" text(45) COLLATE 'RTRIM' NOT NULL,
+  "instance_uuid" text(45) COLLATE 'RTRIM' NOT NULL,
+  "file_location" text COLLATE 'RTRIM' NOT NULL,
+  "file_info" blob NOT NULL,
+  "order" numeric NOT NULL,
+  "expire" numeric NOT NULL
+);
+CREATE INDEX "pic_data_expire" ON "pic_data" ("expire");
+CREATE INDEX "pic_data_order" ON "pic_data" ("order");
+CREATE INDEX "pic_data_instance_uuid" ON "pic_data" ("instance_uuid");
+CREATE INDEX "pic_data_series_uuid" ON "pic_data" ("series_uuid");
+CREATE UNIQUE INDEX "pic_data_series_uuid_instance_uuid" ON "pic_data" ("series_uuid", "instance_uuid");
+

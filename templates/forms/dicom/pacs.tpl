@@ -1,23 +1,23 @@
-{include file="header.tpl"}
-{include file="parts/headBanner.tpl"}
-
-
 
 
 <h1>Hľadanie v PACSe</h1>
+<div class="info box">
 Hľadanie študií pacientov na centrálnom nemocničnom úložišti.
 <ul>
 	<li><strong>Rodné číslo</strong>, celé rodné číslo pacienta bez lomky</li>
 	<li><strong>Meno pacienta</strong>, Časť alebo celé priezvisko pacienta
 	<li><strong>Dátumu</strong> </li>
 </ul> 
-{$errorMsg}
 
-<form action="{$webUrl}index.php?c=dicom&m=searchPacs" method="POST">
-<table>
+</div>
+
+
+<form action="{$webUrl}d/dicom/searchPacs" method="GET">
+<table style="width:500px;">
+<tr><td colspan="2"><h3>Hľadaj podľa...</h3></td></tr>
 <tr>
-	<td><input type="radio" name="queryType" id="name" value="name" checked="checked"><label for="name">Priezvisko</label></td>
-	<td><input type="radio" name="queryType"  id="binNum" value="binNum"><label for="binNum">Rodné číslo</label>
+	<td><input type="radio" name="queryType" id="name" value="name" checked="checked"><label for="name"  class="inline">Priezvisko</label></td>
+	<td><input type="radio" name="queryType"  id="binNum" value="binNum"><label for="binNum" class="inline">Rodné číslo</label>
 </tr>	
 <tr>	
 	<td>Hodnota: </td><td><input type="text" name="query"  onclick="return false;"></td>
@@ -34,4 +34,3 @@ Hľadanie študií pacientov na centrálnom nemocničnom úložišti.
 </table>
 </form>
 
-{include file="footer.tpl"}

@@ -757,6 +757,19 @@ class orthanc extends main {
         $url = $this->url."/tools/find";
         return $this->_curl_c($url,$query);
     }
+    
+    
+    public function getInstanceSimplifiedTags($uuid)
+    {
+    	$url = $this->url."/instances/".$uuid."/simplified-tags";
+    	
+    	$res = $this->_curl_c($url);
+    	
+    	return $res;
+    	
+    }
+    
+    
 }
 
 

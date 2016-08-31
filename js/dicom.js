@@ -1,3 +1,6 @@
+var oServer = "dicom.local";
+
+var pixelSpacing = [];
 
 var contrastStatus = {};
 var brightnessStatus = {};
@@ -10,8 +13,8 @@ var Instances =[];
 
 var sliderData = {};
 
-var dicomDir = "http://10.10.2.49/dicom/public/dicom/pictures/";
-var dCacheDir = "http://10.10.2.49/dicom/public/";
+var dicomDir = "http://"+this.oServer+"/public/dicom/pictures/";
+var dCacheDir = "http://"+this.oServer+"/public/";
 
 var cache = false;
 
@@ -77,7 +80,7 @@ function showPreview(id,url){
 	});*/
 	
 	$(".cell_"+id).css("display","inline");
-	
+	html5
 }
 
 function autoQueryAndRetrieve(filter)
@@ -297,11 +300,11 @@ function loadSeriesData(series,cache)
 	//var series = $("input[id$=series]").val();
 	if (cache === "1"){
 		
-		t.addRawRequest("index.php","jsOt/loadDataFromDb",this,[{series:series},"afterGetDataFromDb"]);
+		t.addRawRequest("index.php","dicom/js_loadDataFromDb",this,[{series:series},"afterGetDataFromDb"]);
 		
 	}else{
 		
-		t.addRawRequest("index.php","jsOt/loadSeriesInstancesAsync",this,[{series:series},"afterLoadSeries"]);
+		t.addRawRequest("index.php","dicom/js_loadSeriesInstancesAsync",this,[{series:series},"afterLoadSeries"]);
 		
 	}
 	t.sendData();
@@ -310,7 +313,6 @@ function loadSeriesData(series,cache)
 
 function initSlider(frCount,cache){
 	$("#sliderBar").css("width","100%");
-	
 	$("#slider").slider();
 	
 	$("#slider").slider({
@@ -335,16 +337,22 @@ function initSlider(frCount,cache){
 function afterGetDataFromDb(status,result)
 {
 	if (status){
-		if (result.length > 0){
-			
+		getPixelRatio(result.dicom.Instances[0]);
+		
+		
+		var fileData = result.file;
+		if (fileData.length > 0){
 			
 			this.cache = true;
-			initSlider(result.length);
 			
-			this.Instances = result;
-			var file = result[0].file_location;
-			var imageData = result[0].file_info;
 			
+			
+			initSlider(fileData.length);
+			
+			this.Instances = fileData;
+			var file = fileData[0].file_location;
+			
+			var imageData = fileData[0].file_info;
 			
 			var wRatio = this.__width / imageData.width;
 			var hRatio = this.__height / imageData.height;
@@ -376,6 +384,46 @@ function afterGetDataFromDb(status,result)
 		}
 	}
 }
+
+function getPixelRatio(data)
+{
+	var t = new js_comunication()
+	t.addRawRequest("index.php","dicom/js_getInstanceTags",this,[{uuid:data},"setInstancePixelRatio"]);
+	t.sendData();
+}
+
+function setInstancePixelRatio(status,result)
+{
+	this.pixelSpacing = result.PixelSpacing.split("\\");
+	
+	this.showPatientData(result);
+	
+}
+
+function showPatientData(data)
+{
+	var html = "<strong>{PatientName}</strong></br>" +
+			"Narodený:<strong>{PatientBirthDate}</strong><br>" +
+			"Vek: <strong>{PatientAge}</strong><br> Sex:<strong>{PatientSex}</strong><br>" +
+			"Dátum štúdie: <strong>{AcquisitionDate}</strong> <br>Čas štúdie: <strong>{AcquisitionTime}</strong><br>" +
+			"Protokol: <strong>{ProtocolName}<br>";
+			
+	var data = {
+		PatientName:data.PatientName,
+		PatientBirthDate:data.PatientBirthDate,
+		PatientAge:data.PatientAge,
+		PatientSex:data.PatientSex,
+		AcquisitionDate:data.AcquisitionDate,
+		AcquisitionTime:data.AcquisitionTime,
+		ProtocolName:data.ProtocolName
+	};
+	
+	var fHtml = onlineRes.fncs.sprintf(html,data);
+	
+	$("#patientInfo").html(fHtml);
+			
+}
+
 
 function afterLoadSeries(status,result)
 {
@@ -442,6 +490,8 @@ function afterMoveStudy(status,result)
 
 function init()
 {
+	
+	console.log("tu");
 	this.__width = $("#player").width();
 	this.__height = $("#player").height();
 	
@@ -478,12 +528,249 @@ function init()
 
 }
 
+function painterOff()
+{
+	var canvas = document.getElementById('player');
+	
+	console.log(canvas);
+	
+	canvas.removeEventListener('mousemove',onPaint,true);
+	
+	
+}
+
+
+
+
+function painter (type)
+{
+	
+	var canvas = document.getElementById('player');
+	var ctx = canvas.getContext('2d');
+	var imageData;
+	
+	if (type !== undefined){
+		console.log(type);
+		imageData= ctx.getImageData(0,0,this.__width,this.__height);
+	}
+	
+	var realPos = document.getElementById("player").getBoundingClientRect();
+	
+	
+	var sketch = document.getElementById('imagePlayer');
+	var sketch_style = getComputedStyle(sketch);
+	
+	canvas.width = parseInt(sketch_style.getPropertyValue('width'));
+	canvas.height = parseInt(sketch_style.getPropertyValue('height'));
+	
+	//console.log(canvas);
+	
+
+	var mouse = {x: 0, y: 0};
+	var last_mouse = {x: 0, y: 0};
+	
+	var lineMouse = {x:-1,y:-1};
+	
+	/* Mouse Capturing Work */
+	
+	if (type!=undefined && type !="off"){
+		
+		
+		
+		
+		
+		canvas.addEventListener('mousemove', function(e) {
+			
+			if (type == "free"){
+				//console.log(e);
+				last_mouse.x = mouse.x;
+				last_mouse.y = mouse.y;
+				
+				mouse.x = e.pageX- 	this.offsetLeft-realPos.left;
+				mouse.y = e.pageY - this.offsetTop-realPos.top;
+			}
+			
+			if (type == "line"){
+				
+				mouse.x = e.pageX- 	this.offsetLeft-realPos.left;
+				mouse.y = e.pageY - this.offsetTop-realPos.top;
+				
+			/*	if (lineMouse.x == -1){
+					lineMouse.x = mouse.x;
+					lineMouse.y = mouse.y;
+				}*/
+				
+				console.log(lineMouse.x);
+				
+				
+			}
+			
+			
+		}, false);
+	}
+	
+	
+	/* Drawing on Paint App */
+	
+	if (type !== undefined && type != "off"){
+	
+		ctx.lineWidth = 2;
+		ctx.lineJoin = 'round';
+		ctx.lineCap = 'round';
+		ctx.strokeStyle = 'yellow';
+		
+		canvas.addEventListener('mousedown', function(e) {
+			
+			if (type=="line"){
+				if (lineMouse.x == -1){
+					lineMouse.x = mouse.x;
+					lineMouse.y = mouse.y;
+				}
+			}
+			
+			canvas.addEventListener('mousemove', onPaint, false);
+			
+			//onPaint(ctx,last_mouse,mouse);
+			
+			
+			/*ctx.beginPath();
+			ctx.moveTo(last_mouse.x, last_mouse.y);
+			ctx.lineTo(mouse.x, mouse.y);
+			ctx.closePath();
+			ctx.stroke();*/
+			
+		}, false);
+		
+		canvas.addEventListener('mouseup', function() {
+			
+			
+			if (type=="line"){
+				
+				var xs = 0;
+				var ys = 0;
+				
+				console.log(this.pixelSpacing);
+				
+				xs = (mouse.x - lineMouse.x) * self.pixelSpacing[0];
+				ys = (mouse.y - lineMouse.y) * self.pixelSpacing[1];
+				
+				xs = xs*xs;
+				ys = ys*ys;
+				
+				var le = Math.round(Math.sqrt(xs+ys));
+				
+				
+				ctx.font = "18px Helvetica";
+				ctx.fillStyle ="white";
+				ctx.fillText("cca "+le+" mm",lineMouse.x,lineMouse.y);
+				
+				
+				
+				
+				lineMouse = {x:-1,y:-1};
+			}
+			canvas.removeEventListener('mousemove', onPaint, false);
+			
+		}, false);
+		
+		
+		if (type!=undefined){
+				ctx.putImageData(imageData,0,0);
+				ctx.fill();
+			}
+		
+		
+		
+	}
+	
+	var offPaint = function () {
+		 if (type=="line"){
+		 	lineMouse = {x:-1,y:-1};
+		 }
+	}
+	
+	
+	var onPaint = function() {
+		
+			if (type=="free"){
+				ctx.beginPath();
+				ctx.moveTo(last_mouse.x, last_mouse.y);
+				ctx.lineTo(mouse.x, mouse.y);
+				ctx.closePath();
+				ctx.stroke();
+			}
+			
+			if (type =="line"){
+				
+				var hCanvas = document.getElementById('hiddenPlayer');
+				var hCtx = hCanvas.getContext('2d');
+				
+				var hID = hCtx.getImageData(0,0,800,800);
+				
+				ctx.putImageData(hID,0,0);
+				
+				ctx.beginPath();
+				ctx.moveTo(lineMouse.x, lineMouse.y);
+				ctx.lineTo(mouse.x, mouse.y);
+				ctx.closePath();
+				//ctx.fill();
+				ctx.stroke();
+				
+			}
+			
+			
+		};
+		
+	var off = function (){
+		ctx.closePath();
+	} 
+	
+	
+	
+	
+	if (type == "off"){
+		
+		canvas = document.getElementById('player');
+		ctx.putImageData(imageData,0,0);
+		ctx.fill();
+		
+		
+	}
+	
+}
+
+
+/*function onPaint(ctx, last_mouse,mouse)
+{
+	ctx.beginPath();
+			ctx.moveTo(last_mouse.x, last_mouse.y);
+			ctx.lineTo(mouse.x, mouse.y);
+			ctx.closePath();
+			ctx.stroke();
+			return;
+}
+*/
+
+/*function onPaint(ctx,last_mouse,mouse)
+{
+	ctx.beginPath();
+	ctx.moveTo(last_mouse.x, last_mouse.y);
+	ctx.lineTo(mouse.x, mouse.y);
+	ctx.closePath();
+	ctx.stroke();
+}*/
+
+
+
 $(document).ready(function(){
+	
 	init();
+	
 	var mviewer = $("#mviewer").val();
 	if (mviewer === "1") {
 		var cache = $("#mviewer_cache").val();
 		var uuid = $("#series").val();
+		//painter();
 		loadSeriesData(uuid,cache);
 	}
 	

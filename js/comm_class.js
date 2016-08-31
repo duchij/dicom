@@ -450,9 +450,9 @@ function callProgressFnc(source,callBack, state,status)
 
 function __completedRequest(respond)
 {
-	
+	 //console.log(respond);
         var	resObj = JSON.parse(respond);
-        //console.log(resObj);
+       // console.log(resObj);
         
         toggleComm(false);
         for (var row in resObj){
@@ -540,141 +540,13 @@ var onlineRes = onlineRes || {}
 
 
 onlineRes.omega = {
-		
-		/**
-		 * Prihlasi usera do omegy, 
-		 * @param {object} data {name,password,source,callBack}
-		 * 
-		 * @returns status (true/false) result(object ak uspesny inak error message)
-		 */
-		
-		loginUser:function(data)
-		{
-			console.log(SESSION.html);
-			var pas1 = CryptoJS.MD5(data.password);
-			var pas1Str = pas1.toString(CryptoJS.enc.Hex);
-			var defPas1 = CryptoJS.MD5(pas1Str);
-			var defPasStr = defPas1.toString(CryptoJS.enc.Hex)+"_"+SESSION.session_id;
-			
-			
-			var t=new js_comunication();
-			t.addRawRequest(_URL_,"onlineRes/forms/ms/jsLoginUser",data.source,[{name:data.name,pass:defPasStr},data.callBack]);
-			t.sendData();
-		},
-        
-		checkUserLogin:function(source,callBack)
-		{
-			var t=new js_comunication();
-			t.addRawRequest(_URL_,"onlineRes/forms/ms/checkIsLogin",source,[{},callBack]);
-			t.sendData();
-		},
-        
-        logoutUser:function(source,callBack)
-		{
-			var t=new js_comunication();
-			t.addRawRequest(_URL_,"onlineRes/forms/ms/logoutUser",source,[{session_id:SESSION.session_id},callBack]);
-			t.sendData();
-		}
+
 }
 
 /**
  * Trieda user sluzi na pracu s uzivetelom
  */
 onlineRes.user = {
-		
-		/**Skontroluje ci je user prihlaseny pomocou AJAXu
-	 * 
-	 * @param login {string} login pacienta
-	 * @param url {string} url kam poslat AJAX
-	 * @param source {object} window kam sa to ma vratis
-	 * @param callBack {string} nazov funkcie
-	 */	
-	checkUserLogin: function (login, url, source, callBack)
-	{
-		var t = new js_comunication();
-		t.addRawRequest(url,"onlineRes/forms/fromJs/jsCheckUserLogin",source,[{login:login},callBack]);
-		t.sendData();
-	},
-
-	/**
-	 * Vytvori noveho klienta pre online rezervacny system
-	 * @param {object} data  (clientName,clientEmail,clientPassword 
-	 * @param {string} url smer na router kde sa prijimaju async data
-	 * @param {object} source zdroj vacsinou this
-	 * @param {string} callBack obsahuje nazov funkcie kam sa ma vysledok vratit
-	 */
-	
-	createUser: function (data, url, source, callBack)
-	{
-		if (data !== undefined && url !== undefined && source !== undefined && callBack !==undefined )
-		{
-			var t = new js_comunication();
-		
-			t.addRawRequest(url, "onlineres/forms/fromJs/jsCreateClient",source,[data,callBack]);
-			t.sendData();
-		}
-		else{
-			callExtFnc(source,callBack,{status:false,result:"Chybne vstupne data..."});
-		}
-	},
-
-	/**
-	 * Overi existenciu klienta v pripade najdenia vracia jeho msId... 
-	 * @param {object} data  {clientName,clientEmail,clientPassword} 
-	 * @param {string} url smer na router kde sa prijimaju async data
-	 * @param {object} source zdroj vacsinou this, vo vnutri JQUERY treba dat odkaz na this
-	 * @param {string} callBack obsahuje nazov funkcie kam sa ma vysledok vratit (vo formate, status, result)
-	 */
-	
-	loginUser: function (data,url,source,callBack)
-	{
-		var t = new js_comunication();
-		t.addRawRequest(url,"onlineRes/forms/fromJs/jsLoginUser",source,[data,callBack]);
-		t.sendData();
-	},
-	
-	/**
-	 * Vytvori rezervaciu na dany verejny slot v kalendari
-	 *  
-	 * @param {object} data  {eventId:cisloSlotu,forCreateReservation:true, returnCamelCase:true} 
-	 * @param {string} url smer na router kde sa prijimaju async data
-	 * @param {object} source zdroj vacsinou this, vo vnutri JQUERY treba dat odkaz na this
-	 * @param {string} callBack obsahuje nazov funkcie kam sa ma vysledok vratit (vo formate, status, result)
-	 */
-	
-	createReservation: function(data,url,source,callBack)
-	{
-		var t = new js_comunication();
-		t.addRawRequest(url,"onlineRes/forms/fromJs/jsCreateReservation", source,[data,callBack]);
-		t.sendData();
-	},
-	/**
-	 * Odhlasi uzivatela
-	 * @param {object} data {prazne}
-	 * @param {string} url smer na router kde idu async data
-	 * @param {object} source zdroj vacsinou this, vo vnutri JQUERY treba dat odkaz na this, self a pod
-	 * @param {string} callBack fukcia kam po logoute... 
-	 */
-	logoutUser: function (data,url,source,callBack)
-	{
-		var t = new js_comunication();
-		t.addRawRequest(url,"onlineRes/forms/fromJs/jslogOutUser",source,[data,callBack]);
-		t.sendData();
-	},
-	/**
-	 * Ziska oddelenia pre rezervacny system...
-	 * 
-	 * @param {object} data  {slot:slot alebo sloty} sloty oddelene ciarkou, ak chceme dla viacerych slotov  
-	 * @param {string} url smer na router kde sa prijimaju async data
-	 * @param {object} source zdroj vacsinou this, vo vnutri JQUERY treba dat odkaz na this
-	 * @param {string} callBack obsahuje nazov funkcie kam sa ma vysledok vratit (vo formate, status, result)
-	 */
-	getDepartments: function (data,url,source,callBack)
-	{
-		var t=new js_comunication();
-		t.addRawRequest(url,"onlineRes/forms/fromJs/jsGetDepartaments",source,[data,callBack]);
-		t.sendData();
-	}
 		
 }
 
@@ -740,96 +612,7 @@ var Mobile = Mobile || {
  * Trieda user sluzi na pracu s uzivetelom
  */
 Mobile.user = {
-	
-	
-		
-		/**Skontroluje ci je user prihlaseny pomocou AJAXu
-	 * 
-	 * @param login {string} login pacienta
-	 * @param source {object} window kam sa to ma vratis
-	 * @param callBack {string} nazov funkcie
-	 */	
-	checkUserLogin: function (login, source, callBack)
-	{
-		var t = new js_comunication();
-		t.addRawRequest(this.__url__,"onlineRes/forms/fromJs/jsCheckUserLogin",source,[{login:login},callBack]);
-		t.sendData();
-	},
 
-	/**
-	 * Vytvori noveho klienta pre online rezervacny system
-	 * @param {object} data  (clientName,clientEmail,clientPassword 
-	 * @param {object} source zdroj vacsinou this
-	 * @param {string} callBack obsahuje nazov funkcie kam sa ma vysledok vratit
-	 */
-	
-	createUser: function (data, source, callBack)
-	{
-		if (data !== undefined && source !== undefined && callBack !==undefined )
-		{
-			var t = new js_comunication();
-		
-			t.addRawRequest(this.__url__, "onlineres/forms/fromJs/jsCreateClient",source,[data,callBack]);
-			t.sendData();
-		}
-		else{
-			callExtFnc(source,callBack,{status:false,result:"Chybne vstupne data..."});
-		}
-	},
-
-	/**
-	 * Overi existenciu klienta v pripade najdenia vracia jeho msId... 
-	 * @param {object} data  {clientName,clientEmail,clientPassword} 
-	 * @param {object} source zdroj vacsinou this, vo vnutri JQUERY treba dat odkaz na this
-	 * @param {string} callBack obsahuje nazov funkcie kam sa ma vysledok vratit (vo formate, status, result)
-	 */
-	
-	loginUser: function (data,source,callBack)
-	{
-		var t = new js_comunication();
-		t.addRawRequest(this.__url__,"onlineRes/forms/fromJs/jsLoginUser",source,[data,callBack]);
-		t.sendData();
-	},
-	
-	/**
-	 * Vytvori rezervaciu na dany verejny slot v kalendari
-	 *  
-	 * @param {object} data  {eventId:cisloSlotu,forCreateReservation:true, returnCamelCase:true} 
-	 * @param {object} source zdroj vacsinou this, vo vnutri JQUERY treba dat odkaz na this
-	 * @param {string} callBack obsahuje nazov funkcie kam sa ma vysledok vratit (vo formate, status, result)
-	 */
-	
-	createReservation: function(data,source,callBack)
-	{
-		var t = new js_comunication();
-		t.addRawRequest(this.__url__,"onlineRes/forms/fromJs/jsCreateReservation", source,[data,callBack]);
-		t.sendData();
-	},
-	/**
-	 * Odhlasi uzivatela
-	 * @param {object} data {prazne}
-	 * @param {object} source zdroj vacsinou this, vo vnutri JQUERY treba dat odkaz na this, self a pod
-	 * @param {string} callBack fukcia kam po logoute... 
-	 */
-	logoutUser: function (data,source,callBack)
-	{
-		var t = new js_comunication();
-		t.addRawRequest(this.__url__,"onlineRes/forms/fromJs/jslogOutUser",source,[data,callBack]);
-		t.sendData();
-	},
-	/**
-	 * Ziska oddelenia pre rezervacny system...
-	 * 
-	 * @param {object} data  {slot:slot alebo sloty} sloty oddelene ciarkou, ak chceme dla viacerych slotov  
-	 * @param {object} source zdroj vacsinou this, vo vnutri JQUERY treba dat odkaz na this
-	 * @param {string} callBack obsahuje nazov funkcie kam sa ma vysledok vratit (vo formate, status, result)
-	 */
-	getDepartments: function (data,source,callBack)
-	{
-		var t=new js_comunication();
-		t.addRawRequest(this.__url__,"onlineRes/forms/fromJs/jsGetDepartaments",source,[data,callBack]);
-		t.sendData();
-	}
 		
 }
 

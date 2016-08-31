@@ -1,10 +1,8 @@
-{include file="header.tpl"}
-{include file="parts/headBanner.tpl"}
 {if $result}
 
-	<h1>Výsledok hľadania...</h1>
+	<h1>Výsledok hľadania... <i>{$parameter}</i></h1>
 	
-	<div class="hint">
+	<div class="info box">
 	V zozname, ktorý vyhovuje vyhľadávaniu, sa nachádzajú malé náhľady snímok, následne sa dá odkliknúť.
 	<ul>
 		<li><strong>Plná kvalita</strong> - otvorí vstavaný prehliadač Orthancu, na plné prezretie obrázku - Pozor CT,MR štúdie radšej pozerať v Tomocone.... 
@@ -15,29 +13,17 @@
 	</ul>
 	
 	</div>
-	<div id="divider"></div>
-	{foreach from=$result item=patient key=p}
-		{assign var="Studies" value=$patient.Studies}
-		<div class="patientRes">
-			Meno pacienta: <strong>{$patient.MainDicomTags.PatientName}</strong><br>
-			Pacient ID: <strong>{$patient.MainDicomTags.PatientID}</strong><br>
-			Pohlavie: <strong>{$patient.MainDicomTags.PatientSex}</strong><br>
+	{foreach from=$result item=study key=p}
+		{assign var="Series" value=$study.Series}
+		<div class="blue box">
+			Meno pacienta: <strong>{$study.PatientMainDicomTags.PatientName}</strong><br>
+			Pacient ID: <strong>{$study.PatientMainDicomTags.PatientID}</strong><br>
+			Pohlavie: <strong>{$study.PatientMainDicomTags.PatientSex}</strong><br>
 		</div>
-		{if $Studies[1]}
-		
-			{foreach from=$Studies item=Study key=s}
-				{include file="parts/previewRes.tpl"}
-			{/foreach}
-		{else}
-		
-			{assign var="Study" value=$Studies[0]}
-			
-			{include file="parts/previewRes.tpl"}
-		{/if}
+			{assign var="Study" value=$study}
+			{include file="forms/dicom/previewRes.tpl"}
 		<div id="divider"></div>
 	{/foreach}
 {else}
 <h3>{$noMatch}</h3>
 {/if}
-
-{include file="footer.tpl"}
