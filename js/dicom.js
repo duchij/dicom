@@ -26,6 +26,14 @@ var __width = 0;
 var __height= 0;
 
 
+var _canvas = {};
+var _ctx = {};
+
+var _mouse = {x:0,y:0};
+var _lineMouse = {x:-1,y:-1};
+
+var _lastMouse = {x:0,y:0};
+
 
 function clone(obj){
     if(obj == null || typeof(obj) != 'object')
@@ -528,238 +536,175 @@ function init()
 
 }
 
-function painterOff()
+/**
+ * This is mouse handler
+ */
+
+var setMouse = function(e) {
+	
+		_lastMouse.x = _mouse.x;
+		_lastMouse.y = _mouse.y;
+	
+		var realPos = document.getElementById("player").getBoundingClientRect();
+	
+		_mouse.x = e.pageX - this.offsetLeft - realPos.left;
+		_mouse.y = e.pageY - this.offsetTop - realPos.top;
+	
+}
+
+
+function draw(){
+	
+	this._canvas = document.getElementById("player");
+	this._ctx = this._canvas.getContext("2d");
+	
+	_ctx.lineWidth = 2;
+	_ctx.lineJoin = 'round';
+	_ctx.lineCap = 'round';
+	_ctx.strokeStyle = 'yellow';
+	
+	_canvas.addEventListener("mousemove",setMouse,false);
+	
+
+	_canvas.addEventListener("mousedown",function(e){
+		_canvas.addEventListener("mousemove",paint,false);
+	},false);
+	
+
+	_canvas.addEventListener("mouseup",function(e){
+		_canvas.removeEventListener("mousemove",paint,false);
+	},false);
+	
+	
+}
+
+function paint(){
+	
+	if (typeof _ctx.beginPath === "function") {
+		_ctx.beginPath();
+		_ctx.moveTo(_lastMouse.x, _lastMouse.y);
+		_ctx.lineTo(_mouse.x, _mouse.y);
+		_ctx.closePath();
+		_ctx.stroke();
+	}
+}
+
+function countLength()
 {
-	var canvas = document.getElementById('player');
+	if (typeof _ctx.fillText === "function"){
+		var xs = 0;
+		var ys = 0;
+					
+					
+		xs = (_mouse.x - _lineMouse.x) * self.pixelSpacing[0];
+		ys = (_mouse.y - _lineMouse.y) * self.pixelSpacing[1];
+					
+		xs = xs*xs;
+		ys = ys*ys;
+					
+		var le = Math.round(Math.sqrt(xs+ys));
+					
+		_ctx.font = "18px Helvetica";
+		_ctx.fillStyle ="white";
+		_ctx.fillText("cca "+le+" mm",_lineMouse.x,_lineMouse.y);
+		
+		storePaintData();	
+		
+		_lineMouse = {x:-1,y:-1};
+		
+		_canvas.removeEventListener("mousemove",__drawLine,false);
+		
+	}
+		
+}
+
+function countLinePoints()
+{
+	if (_lineMouse.x == -1){
+		_lineMouse.x = _mouse.x;
+		_lineMouse.y = _mouse.y;
+	}
 	
-	console.log(canvas);
+	_canvas.addEventListener("mousemove",__drawLine,false);
+}
+
+
+
+function ruler(){
 	
-	canvas.removeEventListener('mousemove',onPaint,true);
+	this._canvas = document.getElementById("player");
+	this._ctx = this._canvas.getContext("2d");
+	
+	_ctx.lineWidth = 2;
+	_ctx.lineJoin = 'round';
+	_ctx.lineCap = 'round';
+	_ctx.strokeStyle = 'yellow';
+	
+	_canvas.addEventListener("mousemove",setMouse,false);
+	
+	_canvas.addEventListener("mousedown",countLinePoints,false);
+	
+	_canvas.addEventListener("mouseup",countLength,false);
+}
+
+function storePaintData()
+{
+	var hiddenCanvas = document.getElementById("hiddenPlayer");
+	var hiddenCtx = hiddenCanvas.getContext("2d");
+		
+	hiddenCtx.putImageData(_ctx.getImageData(0,0,800,800),0,0);
+}
+
+function getPaintData()
+{
+	var hiddenCanvas = document.getElementById("hiddenPlayer");
+	var hiddenCtx = hiddenCanvas.getContext("2d");
+	
+	var imageData = hiddenCtx.getImageData(0,0,800,800);
+	
+	_ctx.putImageData(imageData,0,0);
+	
+}
+
+
+
+function stopDraw(){
+	
+	_ctx={};
+	
+	_lineMouse = {x:-1,y:-1};
+	_mouse = {x:0,y:0};
+	_lastMouse = {x:0,y:0};
+	
+	_canvas.removeEventListener("mousedown",__drawLine,false);
+	_canvas.removeEventListener("mousemove",setMouse,false);
+	_canvas.removeEventListener("mouseup",countLength,false);
 	
 	
 }
 
 
 
-
-function painter (type)
+function __drawLine()
 {
-	
-	var canvas = document.getElementById('player');
-	var ctx = canvas.getContext('2d');
-	var imageData;
-	
-	if (type !== undefined){
-		console.log(type);
-		imageData= ctx.getImageData(0,0,this.__width,this.__height);
-	}
-	
-	var realPos = document.getElementById("player").getBoundingClientRect();
-	
-	
-	var sketch = document.getElementById('imagePlayer');
-	var sketch_style = getComputedStyle(sketch);
-	
-	canvas.width = parseInt(sketch_style.getPropertyValue('width'));
-	canvas.height = parseInt(sketch_style.getPropertyValue('height'));
-	
-	//console.log(canvas);
-	
-
-	var mouse = {x: 0, y: 0};
-	var last_mouse = {x: 0, y: 0};
-	
-	var lineMouse = {x:-1,y:-1};
-	
-	/* Mouse Capturing Work */
-	
-	if (type!=undefined && type !="off"){
+	if (typeof _ctx.putImageData == "function"){
 		
+		var hCanvas = document.getElementById('hiddenPlayer');
+		var hCtx = hCanvas.getContext('2d');
+				
+		var hID = hCtx.getImageData(0,0,800,800);
 		
-		
-		
-		
-		canvas.addEventListener('mousemove', function(e) {
-			
-			if (type == "free"){
-				//console.log(e);
-				last_mouse.x = mouse.x;
-				last_mouse.y = mouse.y;
+		_ctx.putImageData(hID,0,0);
 				
-				mouse.x = e.pageX- 	this.offsetLeft-realPos.left;
-				mouse.y = e.pageY - this.offsetTop-realPos.top;
-			}
-			
-			if (type == "line"){
-				
-				mouse.x = e.pageX- 	this.offsetLeft-realPos.left;
-				mouse.y = e.pageY - this.offsetTop-realPos.top;
-				
-			/*	if (lineMouse.x == -1){
-					lineMouse.x = mouse.x;
-					lineMouse.y = mouse.y;
-				}*/
-				
-				console.log(lineMouse.x);
-				
-				
-			}
-			
-			
-		}, false);
-	}
-	
-	
-	/* Drawing on Paint App */
-	
-	if (type !== undefined && type != "off"){
-	
-		ctx.lineWidth = 2;
-		ctx.lineJoin = 'round';
-		ctx.lineCap = 'round';
-		ctx.strokeStyle = 'yellow';
-		
-		canvas.addEventListener('mousedown', function(e) {
-			
-			if (type=="line"){
-				if (lineMouse.x == -1){
-					lineMouse.x = mouse.x;
-					lineMouse.y = mouse.y;
-				}
-			}
-			
-			canvas.addEventListener('mousemove', onPaint, false);
-			
-			//onPaint(ctx,last_mouse,mouse);
-			
-			
-			/*ctx.beginPath();
-			ctx.moveTo(last_mouse.x, last_mouse.y);
-			ctx.lineTo(mouse.x, mouse.y);
-			ctx.closePath();
-			ctx.stroke();*/
-			
-		}, false);
-		
-		canvas.addEventListener('mouseup', function() {
-			
-			
-			if (type=="line"){
-				
-				var xs = 0;
-				var ys = 0;
-				
-				console.log(this.pixelSpacing);
-				
-				xs = (mouse.x - lineMouse.x) * self.pixelSpacing[0];
-				ys = (mouse.y - lineMouse.y) * self.pixelSpacing[1];
-				
-				xs = xs*xs;
-				ys = ys*ys;
-				
-				var le = Math.round(Math.sqrt(xs+ys));
-				
-				
-				ctx.font = "18px Helvetica";
-				ctx.fillStyle ="white";
-				ctx.fillText("cca "+le+" mm",lineMouse.x,lineMouse.y);
-				
-				
-				
-				
-				lineMouse = {x:-1,y:-1};
-			}
-			canvas.removeEventListener('mousemove', onPaint, false);
-			
-		}, false);
-		
-		
-		if (type!=undefined){
-				ctx.putImageData(imageData,0,0);
-				ctx.fill();
-			}
-		
-		
-		
-	}
-	
-	var offPaint = function () {
-		 if (type=="line"){
-		 	lineMouse = {x:-1,y:-1};
-		 }
-	}
-	
-	
-	var onPaint = function() {
-		
-			if (type=="free"){
-				ctx.beginPath();
-				ctx.moveTo(last_mouse.x, last_mouse.y);
-				ctx.lineTo(mouse.x, mouse.y);
-				ctx.closePath();
-				ctx.stroke();
-			}
-			
-			if (type =="line"){
-				
-				var hCanvas = document.getElementById('hiddenPlayer');
-				var hCtx = hCanvas.getContext('2d');
-				
-				var hID = hCtx.getImageData(0,0,800,800);
-				
-				ctx.putImageData(hID,0,0);
-				
-				ctx.beginPath();
-				ctx.moveTo(lineMouse.x, lineMouse.y);
-				ctx.lineTo(mouse.x, mouse.y);
-				ctx.closePath();
+		_ctx.beginPath();
+		_ctx.moveTo(_lineMouse.x, _lineMouse.y);
+		_ctx.lineTo(_mouse.x, _mouse.y);
+		_ctx.closePath();
 				//ctx.fill();
-				ctx.stroke();
-				
-			}
-			
-			
-		};
-		
-	var off = function (){
-		ctx.closePath();
-	} 
-	
-	
-	
-	
-	if (type == "off"){
-		
-		canvas = document.getElementById('player');
-		ctx.putImageData(imageData,0,0);
-		ctx.fill();
-		
+		_ctx.stroke();
 		
 	}
-	
 }
-
-
-/*function onPaint(ctx, last_mouse,mouse)
-{
-	ctx.beginPath();
-			ctx.moveTo(last_mouse.x, last_mouse.y);
-			ctx.lineTo(mouse.x, mouse.y);
-			ctx.closePath();
-			ctx.stroke();
-			return;
-}
-*/
-
-/*function onPaint(ctx,last_mouse,mouse)
-{
-	ctx.beginPath();
-	ctx.moveTo(last_mouse.x, last_mouse.y);
-	ctx.lineTo(mouse.x, mouse.y);
-	ctx.closePath();
-	ctx.stroke();
-}*/
-
 
 
 $(document).ready(function(){

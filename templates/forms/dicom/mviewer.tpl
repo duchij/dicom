@@ -15,9 +15,9 @@
 	</ul>
 	
 	<ul>
-	<li><a href="javascript:painter('free');">Voľná čiara</a></li>
-	<li><a href="javascript:painter('line');">Meranie vzdialenosti</a></li>
-	<li><a href="javascript:painter('off');">Zrus malovanie</a></li>
+	<li><a href="javascript:draw();">Voľná čiara</a></li>
+	<li><a href="javascript:ruler();">Meranie vzdialenosti</a></li>
+	<li><a href="javascript:stopDraw();">Zrus malovanie</a></li>
 	</ul>
 	<div class="info box">
 		<div id="patientInfo"></div>
