@@ -4,7 +4,7 @@
 
 <div class="one fifth">
 <h1>Priehliadač</h1>	
-<code><div id="mplayer_frame"></div></code>
+Snimka: <code><div id="mplayer_frame"></div></code>
 <input type="hidden" id="series" value="{$series}">
 <input type="hidden" id="mviewer" value="1">
 <input type="hidden" id="mviewer_cache" value="{$cache}">
@@ -17,6 +17,7 @@
 	<ul>
 	<li><a href="javascript:draw();">Voľná čiara</a></li>
 	<li><a href="javascript:ruler();">Meranie vzdialenosti</a></li>
+	<li><a href="javascript:angle();">Uhol</a></li>
 	<li><a href="javascript:stopDraw();">Zrus malovanie</a></li>
 	</ul>
 	<div class="info box">

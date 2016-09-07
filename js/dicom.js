@@ -7,8 +7,6 @@ var brightnessStatus = {};
 
 var selectedPicData = {};
 
-
-
 var Instances =[];
 
 var sliderData = {};
@@ -34,6 +32,10 @@ var _lineMouse = {x:-1,y:-1};
 
 var _lastMouse = {x:0,y:0};
 
+var _lineCounter = 0;
+
+var _pointMatrix = [];
+
 
 function clone(obj){
     if(obj == null || typeof(obj) != 'object')
@@ -46,7 +48,7 @@ function clone(obj){
     return temp;
 }
 
-http://is.kdch.sk/hlasko.aspx
+
 function copy_object(obj)
 {
 	//return copyObject(obj);
@@ -206,7 +208,9 @@ function dragging(e,ui,cache){
 		
 			hiddenCtx.drawImage(img,0,0,viewWidth,viewHeight);
 			hiddenCtx.fill();
-		
+			if (this.contrastStatus == undefined){
+				return;
+			}		
 			if (this.contrastStatus.value != undefined){
 				changeContrast(e,this.contrastStatus);
 			}
@@ -261,7 +265,7 @@ function changeContrast(e,ui)
 
 function changeBrightness(e,ui)
 {
-	console.log([e,ui]);
+//	console.log([e,ui]);
 	var canvas = document.getElementById("player");
 	var ctx = canvas.getContext("2d");
 	
@@ -347,13 +351,12 @@ function afterGetDataFromDb(status,result)
 	if (status){
 		getPixelRatio(result.dicom.Instances[0]);
 		
-		
 		var fileData = result.file;
 		if (fileData.length > 0){
 			
+			$("#mplayer_frame").html(fileData.length+"/1");
+			
 			this.cache = true;
-			
-			
 			
 			initSlider(fileData.length);
 			
@@ -439,24 +442,19 @@ function afterLoadSeries(status,result)
 	if (status)
 	{
 		this.sliderData.frames = result.Instances.length;
+
+		$("#mplayer_frame").html(result.Instances.length+"/1");
 		
 		initSlider();
-		//$("#slider").slider("option","step",7);
 	
 		this.Instances = result.Instances;
-		
 		var Instance = result.Instances[0];
-
 		var file = dirStructure(Instance);
-	
 		var url = this.dicomDir+file+".png";
-		
-		
 		var canvas = document.getElementById("player");
-		
 		var ctx = canvas.getContext("2d");
-		
 		var img = new Image();
+		
 		img.src = url;
 		img.onload = function() {
 			ctx.drawImage(img,0,0,10,20);
@@ -537,7 +535,8 @@ function init()
 }
 
 /**
- * This is mouse handler
+ * This is global mouse handler for basic drawing....
+ * It takes the getBoundingClientRect ----- > we are in responsive design so the position may wary......
  */
 
 var setMouse = function(e) {
@@ -549,12 +548,12 @@ var setMouse = function(e) {
 	
 		_mouse.x = e.pageX - this.offsetLeft - realPos.left;
 		_mouse.y = e.pageY - this.offsetTop - realPos.top;
-	
+//		console.log(_mouse);
 }
 
 
 function draw(){
-	
+
 	this._canvas = document.getElementById("player");
 	this._ctx = this._canvas.getContext("2d");
 	
@@ -564,21 +563,28 @@ function draw(){
 	_ctx.strokeStyle = 'yellow';
 	
 	_canvas.addEventListener("mousemove",setMouse,false);
-	
 
-	_canvas.addEventListener("mousedown",function(e){
-		_canvas.addEventListener("mousemove",paint,false);
-	},false);
-	
+	_canvas.addEventListener("mousedown", draw_mousedown ,false);
 
-	_canvas.addEventListener("mouseup",function(e){
-		_canvas.removeEventListener("mousemove",paint,false);
-	},false);
-	
+	_canvas.addEventListener("mouseup",draw_mouseup,false);
 	
 }
 
-function paint(){
+
+function draw_mousedown()
+{
+	_canvas.addEventListener("mousemove",draw_paint,false);
+}
+
+function draw_mouseup()
+{
+	storePaintData();
+	_canvas.removeEventListener("mousemove",draw_paint,false);
+}
+
+
+
+function draw_paint(){
 	
 	if (typeof _ctx.beginPath === "function") {
 		_ctx.beginPath();
@@ -588,13 +594,16 @@ function paint(){
 		_ctx.stroke();
 	}
 }
-
-function countLength()
+/**
+ * Function calculates the length of a line by using Euklid theorem and using dicom horizontal and vertical 
+ * Pixel spacing counts the approximated length of the line 
+ */
+function ruler_countLength()
 {
 	if (typeof _ctx.fillText === "function"){
+	
 		var xs = 0;
 		var ys = 0;
-					
 					
 		xs = (_mouse.x - _lineMouse.x) * self.pixelSpacing[0];
 		ys = (_mouse.y - _lineMouse.y) * self.pixelSpacing[1];
@@ -612,20 +621,24 @@ function countLength()
 		
 		_lineMouse = {x:-1,y:-1};
 		
-		_canvas.removeEventListener("mousemove",__drawLine,false);
-		
 	}
+	
+	_canvas.removeEventListener("mousemove",ruler_drawLine,false);
+	_canvas.removeEventListener("mousedown",ruler_countLinePoints,false);
 		
 }
 
-function countLinePoints()
+/**
+ * function sets the start point as fixed and mouse determines the endpoint
+ */
+function ruler_countLinePoints()
 {
 	if (_lineMouse.x == -1){
 		_lineMouse.x = _mouse.x;
 		_lineMouse.y = _mouse.y;
 	}
 	
-	_canvas.addEventListener("mousemove",__drawLine,false);
+	_canvas.addEventListener("mousemove",ruler_drawLine,false);
 }
 
 
@@ -642,9 +655,9 @@ function ruler(){
 	
 	_canvas.addEventListener("mousemove",setMouse,false);
 	
-	_canvas.addEventListener("mousedown",countLinePoints,false);
+	_canvas.addEventListener("mousedown",ruler_countLinePoints,false);
 	
-	_canvas.addEventListener("mouseup",countLength,false);
+	_canvas.addEventListener("mouseup",ruler_countLength,false);
 }
 
 function storePaintData()
@@ -666,8 +679,6 @@ function getPaintData()
 	
 }
 
-
-
 function stopDraw(){
 	
 	_ctx={};
@@ -676,22 +687,17 @@ function stopDraw(){
 	_mouse = {x:0,y:0};
 	_lastMouse = {x:0,y:0};
 	
-	_canvas.removeEventListener("mousedown",__drawLine,false);
 	_canvas.removeEventListener("mousemove",setMouse,false);
-	_canvas.removeEventListener("mouseup",countLength,false);
-	
 	
 }
 
 
-
-function __drawLine()
+function ruler_drawLine()
 {
 	if (typeof _ctx.putImageData == "function"){
 		
 		var hCanvas = document.getElementById('hiddenPlayer');
 		var hCtx = hCanvas.getContext('2d');
-				
 		var hID = hCtx.getImageData(0,0,800,800);
 		
 		_ctx.putImageData(hID,0,0);
@@ -705,6 +711,144 @@ function __drawLine()
 		
 	}
 }
+
+function angle()
+{
+	this._canvas = document.getElementById("player");
+	this._ctx = this._canvas.getContext("2d");
+	
+	_ctx.lineWidth = 2;
+	_ctx.lineJoin = 'round';
+	_ctx.lineCap = 'round';
+	_ctx.strokeStyle = 'yellow';
+	
+	_canvas.addEventListener("mousemove",setMouse,false);
+	
+	_canvas.addEventListener("mousedown",angle_countLinePoints,false);
+	
+	_canvas.addEventListener("mouseup",angle_drawSecondLine,false);
+}
+
+function angle_countLinePoints()
+{
+	if (_lineMouse.x == -1){
+		_lineMouse.x = _mouse.x;
+		_lineMouse.y = _mouse.y;
+		
+	}
+	
+	_canvas.addEventListener("mousemove",angle_drawLine,false);
+	
+}
+
+function angle_drawLine()
+{
+	if (typeof _ctx.putImageData == "function"){
+		
+		var hCanvas = document.getElementById('hiddenPlayer');
+		var hCtx = hCanvas.getContext('2d');
+		var hID = hCtx.getImageData(0,0,800,800);
+		
+		_ctx.putImageData(hID,0,0);
+				
+		_ctx.beginPath();
+		_ctx.moveTo(_lineMouse.x, _lineMouse.y);
+		
+		_ctx.lineTo(_mouse.x, _mouse.y);
+		_ctx.closePath();
+		
+		_pointMatrix[_lineCounter] = { startX:_lineMouse.x,startY:_lineMouse.y,endX:_mouse.x,endY:_mouse.y};
+				//ctx.fill();
+				
+		_ctx.stroke();
+		
+//		console.log(["d",_lineCounter,_pointMatrix]);
+		
+	}
+}
+
+function angle_drawSecondLine()
+{
+	storePaintData();
+	
+	_lineMouse.x = _mouse.x;
+	_lineMouse.y = _mouse.y;
+	_lineCounter++;
+	_canvas.removeEventListener("mousemove",angle_drawLine,false);
+	
+	if (_lineCounter >=2){
+		
+		countAngle();
+		_lineMouse={x:-1,y:-1}
+		_lineCounter = 0;
+		_canvas.removeEventListener("mousedown",angle_countLinePoints,false);
+	}
+	
+//	console.log(_pointMatrix)
+		
+}
+
+
+function countAngle()
+{
+	console.log(_pointMatrix);
+	
+	
+	
+	
+	var vector1 = this._pointMatrix[0];
+	var vector2 = this._pointMatrix[1];
+	
+	
+	var eu_vector1 = {x:0,y:0};
+	var eu_vector2 = {x:0,y:0};
+	
+	var vector1Length = Math.sqrt(Math.pow((vector1.startX - vector1.endX),2) + Math.pow((vector1.startY-vector1.endY),2));
+	
+	var vector2Length = Math.sqrt(Math.pow((vector2.startX - vector2.endX),2) + Math.pow((vector2.startY-vector2.endY),2));
+	
+	var vector3Length = Math.sqrt(Math.pow((vector1.startX - vector2.endX),2) + Math.pow((vector1.startY-vector2.endY),2));
+	
+	
+	var res = 
+	
+	console.log([vector1Length,vector2Length,vector3Length]);
+	
+	return;
+
+	
+	
+	
+	console.log([eu_vector1,eu_vector2]);
+	
+	return;
+	
+	var res1 = (eu_vector1.x * eu_vector2.x) + (eu_vector1.y * eu_vector2.y); 
+	
+	var resS1 = (eu_vector1.x * eu_vector1.x) + (eu_vector1.Y * eu_vector1.y);
+	
+	resS1 = Math.sqrt(resS1);
+	
+	var resS2 =	(eu_vector2.x * eu_vector2.x) + (eu_vector2.y * eu_vector2.y);
+	
+	resS2 = Math.sqrt(resS2);
+	
+//	var result  = Math.cos(res1/(resS1*resS2));
+	
+	var result  = res1/(resS1*resS2);
+	
+	var r = Math.atan2(vector2.endY-vector1.endY, vector2.endX-vector1.endX)*180/Math.PI;
+	
+	console.log([res1, r, result]);
+	
+	//var result = result*180/Math.PI;
+	
+	//console.log(result);
+	
+}
+
+
+
 
 
 $(document).ready(function(){
