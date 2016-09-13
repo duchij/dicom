@@ -348,6 +348,7 @@ function initSlider(frCount,cache){
 
 function afterGetDataFromDb(status,result)
 {
+	console.log(result);
 	if (status){
 		getPixelRatio(result.dicom.Instances[0]);
 		
@@ -788,65 +789,61 @@ function angle_drawSecondLine()
 		
 }
 
+function calculateCosinusLamba(a,b,c)
+{
+	var cosLambda = (Math.pow(c,2)-Math.pow(a,2)-Math.pow(b,2)) / (-1*(2*a*b));
+	
+	return cosLambda;
+	
+	
+}
+
 
 function countAngle()
 {
 	console.log(_pointMatrix);
 	
-	
-	
-	
 	var vector1 = this._pointMatrix[0];
 	var vector2 = this._pointMatrix[1];
+	
+	
+	//calculate the mm pixel with pixelRatio
+	vector1.x = vector1.x*pixelSpacing[0];
+	vector2.x = vector2.x*pixelSpacing[0];
+	
+	vector1.y = vector1.y * pixelSpacing[0];
+	vector2.y = vector2.y * pixelSpacing[0];
 	
 	
 	var eu_vector1 = {x:0,y:0};
 	var eu_vector2 = {x:0,y:0};
 	
-	var vector1Length = Math.sqrt(Math.pow((vector1.startX - vector1.endX),2) + Math.pow((vector1.startY-vector1.endY),2));
+	var vector1Length = Math.sqrt(Math.pow((vector1.startX - vector1.endX),2) + Math.pow((vector1.startY - vector1.endY),2));
 	
-	var vector2Length = Math.sqrt(Math.pow((vector2.startX - vector2.endX),2) + Math.pow((vector2.startY-vector2.endY),2));
+	var vector2Length = Math.sqrt(Math.pow((vector2.startX - vector2.endX),2) + Math.pow((vector2.startY - vector2.endY),2));
 	
-	var vector3Length = Math.sqrt(Math.pow((vector1.startX - vector2.endX),2) + Math.pow((vector1.startY-vector2.endY),2));
-	
-	
-	var res = 
+	var vector3Length = Math.sqrt(Math.pow((vector1.startX - vector2.endX),2) + Math.pow((vector1.startY - vector2.endY),2));
 	
 	console.log([vector1Length,vector2Length,vector3Length]);
 	
-	return;
-
-	
-	
-	
-	console.log([eu_vector1,eu_vector2]);
-	
-	return;
-	
-	var res1 = (eu_vector1.x * eu_vector2.x) + (eu_vector1.y * eu_vector2.y); 
-	
-	var resS1 = (eu_vector1.x * eu_vector1.x) + (eu_vector1.Y * eu_vector1.y);
-	
-	resS1 = Math.sqrt(resS1);
-	
-	var resS2 =	(eu_vector2.x * eu_vector2.x) + (eu_vector2.y * eu_vector2.y);
-	
-	resS2 = Math.sqrt(resS2);
-	
-//	var result  = Math.cos(res1/(resS1*resS2));
-	
-	var result  = res1/(resS1*resS2);
-	
-	var r = Math.atan2(vector2.endY-vector1.endY, vector2.endX-vector1.endX)*180/Math.PI;
-	
-	console.log([res1, r, result]);
-	
-	//var result = result*180/Math.PI;
-	
-	//console.log(result);
-	
+	if (vector1Length !== vector2Length !== vector2Length){
+		var cosLambda = this.calculateCosinusLamba(vector1Length,vector2Length,vector3Length);
+		
+		var lambdaR = Math.acos(cosLambda);
+		
+		var angle = (lambdaR*180/Math.PI)*100;
+		
+		angle = Math.round(angle);
+		angle = angle / 100;
+		
+		console.log(angle);
+		
+		_ctx.font = "18px Helvetica";
+		_ctx.fillStyle ="white";
+		_ctx.fillText("cca "+angle+" ˚",vector1.endX,vector1.endY);
+		
+	}
 }
-
 
 
 

@@ -8,7 +8,7 @@
 	<script src="{$webUrl}js/jquery-ui.min.js" type="text/javascript"></script>
 
 	<script src="{$webUrl}js/comm_class.js" type="text/javascript"></script>
-	<script src="{$webUrl}js/orthanc.js" type="text/javascript"></script>
+<!-- 	<script src="{$webUrl}js/orthanc.js" type="text/javascript"></script> -->
 	
 	
 	<link rel="stylesheet" type="text/css" href="{$webUrl}css/jquery-ui.min.css">
