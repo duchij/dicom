@@ -1,5 +1,7 @@
 
-
+			<div id="paintWindow" style="display: none;">{include file="forms/dicom/pviewer.tpl"}</div>
+			
+			
 			<div class="info box">
 				Dátum: <strong>{$Study.MainDicomTags.StudyDate}</strong> 
 				Popis: <strong>{$Study.MainDicomTags.StudyDescription}</strong>
@@ -38,7 +40,7 @@
 					{else}
 					{foreach from=$Instances item=Instance key=i}
 						<div class="inline">
-							<a href="javascript:showPreview('{$Instance}','{$orthancUrl}');">
+							<a href="javascript:loadInstanceData('{$Instance}','{$orthancUrl}');">
 							<figure class="img_border"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="90" align="left"></figure></a>
 <!-- 							<td valign="top"><a href="{$router}dicom/showViewer?seriesUUID={$Series[$s].ID}" class="picLink"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="50"></a></td> -->
 								<div class="inline-block padded">
@@ -49,8 +51,12 @@
 								</ul>
 								</div>
 						
-							<div class="cell_{$Instance}" style="display:none;"><a href="javascript:hidePic('cell_{$Instance}');">
-							<img width="80%" src="{$orthancUrl}/instances/{$Instance}/preview" title="Click to close"></a></div>			
+							<div class="cell_{$Instance}" style="display:none;">
+							{*include file= "forms/dicom/pviewer.tpl"*}
+							
+							
+							{* <a href="javascript:('cell_{$Instance}');">
+							<img width="80%" src="{$orthancUrl}/instances/{$Instance}/preview" title="Click to close"></a> *}</div>			
 						</div>
 							
 						
@@ -88,7 +94,7 @@
 				{else}
 					{foreach from=$Instances item=Instance key=i}
 					<div class="inline">
-						<a href="javascript:showPreview('{$Instance}','{$orthancUrl}');">
+						<a href="javascript:loadInstanceData('{$Instance}','{$orthancUrl}');">
 						<figure class="img_border"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="90" align="left"></figure></a>
 <!-- 						<td valign="middle"><center><a href="{$router}dicom/showViewer?seriesUUID={$Series.ID}" class="picLink"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="100"></a></center></td> -->
 								<div class="inline-block padded">
@@ -100,8 +106,10 @@
 								</div>
 								
 						<div class="cell_{$Instance}" style="display:none;">
-						<a href="javascript:hidePic('cell_{$Instance}');">
-						<img width="80%" src="{$orthancUrl}/instances/{$Instance}/preview" title="Click to close"></a></div>
+						
+						{*include file= "forms/dicom/pviewer.tpl"*}
+						{*<a href="javascript:hidePic('cell_{$Instance}');">
+						<img width="80%" src="{$orthancUrl}/instances/{$Instance}/preview" title="Click to close"></a>*}</div>
 								
 					</div>
 						

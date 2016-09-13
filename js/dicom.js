@@ -2,6 +2,8 @@ var oServer = "dicom.local";
 
 var pixelSpacing = [];
 
+var scaleRatio = [];
+
 var contrastStatus = {};
 var brightnessStatus = {};
 
@@ -35,6 +37,12 @@ var _lastMouse = {x:0,y:0};
 var _lineCounter = 0;
 
 var _pointMatrix = [];
+
+
+
+
+
+
 
 
 function clone(obj){
@@ -243,6 +251,7 @@ function changeContrast(e,ui)
 	$(".contrastLabel").html(contrast);
 	
 	for (var i = 0; i < dataLn; i += 4) {
+		var realPos = document.getElementById("player").getBoundingCl
 		
 		var average = Math.round( ( data[i] + data[i+1] + data[i+2] ) / 3 );
 		
@@ -266,7 +275,7 @@ function changeContrast(e,ui)
 function changeBrightness(e,ui)
 {
 //	console.log([e,ui]);
-	var canvas = document.getElementById("player");
+	var canvas = document.getElementById("player");_canvas.addEventListener("mousedown",angle_countLinePoints,false);
 	var ctx = canvas.getContext("2d");
 	
 	var hiddenCanvas = document.getElementById("hiddenPlayer");
@@ -309,7 +318,7 @@ function loadSeriesData(series,cache)
 	this.init();
 	
 	var t=new js_comunication();
-	//var series = $("input[id$=series]").val();
+	//var series = $("input[id$=series]").val();_canvas.addEventListener("mousedown",angle_countLinePoints,false);
 	if (cache === "1"){
 		
 		t.addRawRequest("index.php","dicom/js_loadDataFromDb",this,[{series:series},"afterGetDataFromDb"]);
@@ -406,7 +415,30 @@ function getPixelRatio(data)
 
 function setInstancePixelRatio(status,result)
 {
+	
 	this.pixelSpacing = result.PixelSpacing.split("\\");
+	
+	var columns 	= Number( result.Columns);
+	
+	var rows 		= Number(result.Rows);
+	
+	if (this.__width >= columns) {
+		
+		this.scaleRatio[0] = columns / this.__width;
+	
+	}else{
+		this.scaleRatio[0] = this.__width / columns;
+	}
+	
+	
+	if (this.__height >= rows) {
+		
+		this.scaleRatio[1] = rows / this.__height;
+	
+	}else{
+		this.scaleRatio[1] = this.__height / rows;
+	}
+	
 	
 	this.showPatientData(result);
 	
@@ -415,7 +447,7 @@ function setInstancePixelRatio(status,result)
 function showPatientData(data)
 {
 	var html = "<strong>{PatientName}</strong></br>" +
-			"Narodený:<strong>{PatientBirthDate}</strong><br>" +
+			"Narodený: <strong>{PatientBirthDate}</strong><br>" +
 			"Vek: <strong>{PatientAge}</strong><br> Sex:<strong>{PatientSex}</strong><br>" +
 			"Dátum štúdie: <strong>{AcquisitionDate}</strong> <br>Čas štúdie: <strong>{AcquisitionTime}</strong><br>" +
 			"Protokol: <strong>{ProtocolName}<br>";
@@ -470,7 +502,7 @@ function afterLoadSeries(status,result)
 function hidePic(id)
 {
 	$("."+id).css("display","none");
-}
+}http://dicom.local/
 
 function pacsMove(path,rId)
 {
@@ -499,8 +531,10 @@ function init()
 {
 	
 	console.log("tu");
-	this.__width = $("#player").width();
-	this.__height = $("#player").height();
+	
+	
+	this.__width = Number($("#player").width());
+	this.__height = Number($("#player").height());
 	
 	
 	
@@ -549,6 +583,10 @@ var setMouse = function(e) {
 	
 		_mouse.x = e.pageX - this.offsetLeft - realPos.left;
 		_mouse.y = e.pageY - this.offsetTop - realPos.top;
+		
+//		_mouse.x = e.pageX - this.offsetLeft;
+//		_mouse.y = e.pageY - this.offsetTop;
+		
 //		console.log(_mouse);
 }
 
@@ -605,14 +643,13 @@ function ruler_countLength()
 	
 		var xs = 0;
 		var ys = 0;
+		
+		var vector = { startX:_lineMouse.x, startY:_lineMouse.y, endX:_mouse.x, endY:_mouse.y};
 					
-		xs = (_mouse.x - _lineMouse.x) * self.pixelSpacing[0];
-		ys = (_mouse.y - _lineMouse.y) * self.pixelSpacing[1];
+		var le = countVectorLength(vector);
 					
-		xs = xs*xs;
-		ys = ys*ys;
-					
-		var le = Math.round(Math.sqrt(xs+ys));
+		le = Math.round(le*100);
+		le = le / 100;
 					
 		_ctx.font = "18px Helvetica";
 		_ctx.fillStyle ="white";
@@ -624,8 +661,11 @@ function ruler_countLength()
 		
 	}
 	
-	_canvas.removeEventListener("mousemove",ruler_drawLine,false);
+	_canvas.removeEventListener("mouseup",ruler_countLength,false);
 	_canvas.removeEventListener("mousedown",ruler_countLinePoints,false);
+	_canvas.removeEventListener("mousemove",ruler_drawLine,false);
+	
+	this.stopDraw();
 		
 }
 
@@ -759,11 +799,8 @@ function angle_drawLine()
 		_ctx.closePath();
 		
 		_pointMatrix[_lineCounter] = { startX:_lineMouse.x,startY:_lineMouse.y,endX:_mouse.x,endY:_mouse.y};
-				//ctx.fill();
-				
 		_ctx.stroke();
 		
-//		console.log(["d",_lineCounter,_pointMatrix]);
 		
 	}
 }
@@ -792,57 +829,105 @@ function angle_drawSecondLine()
 function calculateCosinusLamba(a,b,c)
 {
 	var cosLambda = (Math.pow(c,2)-Math.pow(a,2)-Math.pow(b,2)) / (-1*(2*a*b));
-	
 	return cosLambda;
-	
-	
+}
+
+function countVectorLength(vector)
+{
+	return Math.sqrt( ( Math.pow((vector.startX - vector.endX) ,2) * Number(this.pixelSpacing[0]) * this.scaleRatio[0]) + ( Math.pow((vector.startY - vector.endY),2) * Number(this.pixelSpacing[1]) * this.scaleRatio[1]));
 }
 
 
 function countAngle()
 {
-	console.log(_pointMatrix);
 	
 	var vector1 = this._pointMatrix[0];
-	var vector2 = this._pointMatrix[1];
+	var vector2 = this._pointMatrixx[1];
+	
+	var vector1Length = countVectorLength(vector1); 
+	
+	var vector2Length = countVectorLength(vector2);
+	
+	var vector3Length = Math.sqrt( ( Math.pow((vector1.startX - vector2.endX) ,2) * Number(this.pixelSpacing[0]) * this.scaleRatio[0]) + ( Math.pow((vector1.startY - vector2.endY),2) * Number(this.pixelSpacing[1]) * this.scaleRatio[1]));
+	
+	var cosLambda = this.calculateCosinusLamba(vector1Length,vector2Length,vector3Length);
+	
+	var lambdaR = Math.acos(cosLambda);
+	
+	var angle = (lambdaR*180/Math.PI)*100;
+	
+	angle = Math.round(angle);
+	angle = angle / 100;
 	
 	
-	//calculate the mm pixel with pixelRatio
-	vector1.x = vector1.x*pixelSpacing[0];
-	vector2.x = vector2.x*pixelSpacing[0];
+	_ctx.font = "18px Helvetica";
+	_ctx.fillStyle ="white";
+	_ctx.fillText("cca "+angle+"˚",vector1.endX,vector1.endY);
 	
-	vector1.y = vector1.y * pixelSpacing[0];
-	vector2.y = vector2.y * pixelSpacing[0];
+	this.storePaintData();
 	
+	_canvas.removeEventListener("mouseup",angle_drawSecondLine,false);
+	_canvas.removeEventListener("mousedown",angle_countLinePoints,false);
+	_canvas.removeEventListener("mousemove",setMouse,false);
 	
-	var eu_vector1 = {x:0,y:0};
-	var eu_vector2 = {x:0,y:0};
-	
-	var vector1Length = Math.sqrt(Math.pow((vector1.startX - vector1.endX),2) + Math.pow((vector1.startY - vector1.endY),2));
-	
-	var vector2Length = Math.sqrt(Math.pow((vector2.startX - vector2.endX),2) + Math.pow((vector2.startY - vector2.endY),2));
-	
-	var vector3Length = Math.sqrt(Math.pow((vector1.startX - vector2.endX),2) + Math.pow((vector1.startY - vector2.endY),2));
-	
-	console.log([vector1Length,vector2Length,vector3Length]);
-	
-	if (vector1Length !== vector2Length !== vector2Length){
-		var cosLambda = this.calculateCosinusLamba(vector1Length,vector2Length,vector3Length);
+	this.stopDraw();
 		
-		var lambdaR = Math.acos(cosLambda);
 		
-		var angle = (lambdaR*180/Math.PI)*100;
-		
-		angle = Math.round(angle);
-		angle = angle / 100;
-		
-		console.log(angle);
-		
-		_ctx.font = "18px Helvetica";
-		_ctx.fillStyle ="white";
-		_ctx.fillText("cca "+angle+" ˚",vector1.endX,vector1.endY);
-		
+}
+
+
+function loadInstanceData(uuid){
+	
+	var element = $("#paintWindow #player");
+	
+	this._canvas = element[0]; 
+	
+	this._ctx = this._canvas.getContext('2d');
+	
+	var img = new Image();
+	var url = this.orthancREST+"/instances/"+uuid+"/preview"
+	img.src = url;
+	img.onload = function() {
+		_ctx.drawImage(img,0,0,800,800);
+		_ctx.fill();
 	}
+		
+	$("#paintWindow").dialog({width:900,height:800});
+	
+	
+	
+		
+		
+		/*var url = this.orthancREST+"/instances/"+uuid+"/preview";
+		var canvas = document.getElementById("player");
+		var ctx = canvas.getContext("2d");
+		var img = new Image();
+		
+		img.src = url;
+		img.onload = function() {
+			ctx.drawImage(img,0,0,800,800);
+			ctx.fill();
+		}*/
+	
+	
+	
+}
+
+function p_draw(){
+	/*var hiddenCanvas = document.getElementById("hiddenPlayer");
+	var dicom = new dicomMath(_canvas,_ctx,this.pixelSpacing,this.scaleRatio, hiddenCanvas);
+	dicom.paint();*/
+	
+	
+	this.draw();
+	
+	
+	
+}
+
+function p_ruler(){
+	var dicom = new dicomMath(this._canvas,this._ctx,this.pixelSpacing, this.scaleRatio);
+	dicom.ruler();
 }
 
 
@@ -858,6 +943,15 @@ $(document).ready(function(){
 		var uuid = $("#series").val();
 		//painter();
 		loadSeriesData(uuid,cache);
+	}
+	
+	
+	
+	
+	var pviewer = $("#pviewer").val();
+	if (pviewer === "1"){
+		$("#paintWindow").dialog();
+		$("#paintWindow").dialog("close");
 	}
 	
 	

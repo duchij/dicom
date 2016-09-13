@@ -14,6 +14,7 @@
 <!-- <script src="js/pss.js" type="text/javascript"></script> -->
 <!-- <script src="tinymce/tinymce.min.js" type="text/javascript"></script> -->
 <script src="js/main.js" type="text/javascript"></script>
+<script src="js/dicommath.js" type="text/javascript"></script>
 
 <script>
 	/*tinymce.init({ 

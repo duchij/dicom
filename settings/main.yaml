@@ -1,7 +1,7 @@
 main_server: http://10.10.2.49:3333
 client_server: http://10.10.2.49:3333
-storage_url: /web/dicom/data/dicom
-imagemagick_dir: /opt/local/bin/
+storage_url: /web/loc_dicom/data/dicom
+imagemagick_dir: /usr/bin/
 web_url: http://dicom.local/
 router: http://dicom.local/d/
-os_dir: /web/dicom/public/
+os_dir: /web/loc_dicom/public/
