@@ -102,10 +102,10 @@ class db{
 
         $this->log->logData($query,false,"row sql query");
 
-        $results = $this->db->query($query);
-        $this->log->logData($results);
-        if ($results){
-            return $results->fetch(PDO::FETCH_ASSOC);
+        $result = $this->db->query($query);
+        $this->log->logData($result);
+        if ($result !== FALSE){
+            return $result->fetch(PDO::FETCH_ASSOC);
         }
         else{
             $tmp = $this->db->errorInfo();
@@ -159,9 +159,7 @@ class db{
 
         foreach ($data as $key=>$value)
         {
-            array_push($cols,$key);
-
-            var_dump($key);
+            array_push($cols,"`".$key."`");
             //$escStr = trim($value);
             $val = $this->db->quote($value,PDO::PARAM_STR);
             array_push($values,$val);
@@ -188,7 +186,7 @@ class db{
             $result["msg"] = $tmp[2];
             $result["sql"] = $sql;
         }
-        $this->db = null;
+       // $this->db = null;
         return $result;
 
     }

@@ -12,6 +12,8 @@
 <input type="hidden" id="instance" value="{$Instance}">
 <input type="hidden" id="pviewer" value="1">
 <input type="hidden" id="pviewer_cache" value="{$cache}">
+<input type="hidden" id="width" value="{$size[0]}">
+<input type="hidden" id="height" value="{$size[1]}">
 
 	
 	<ul>

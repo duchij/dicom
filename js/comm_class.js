@@ -459,7 +459,7 @@ function __completedRequest(respond)
             if (row.length > 0){
             	
             	if (__commQueue__["comm_"+resObj[row].id] != undefined){
-            		
+            		//console.log(["he",__commQueue__]);
             		callBackFnc(__commQueue__["comm_"+resObj[row].id].source,__commQueue__["comm_"+resObj[row].id].callBack,resObj[row],__commQueue__["comm_"+resObj[row].id].oArgs);
             		__comm_count__ -=1; 
             		delete __commQueue__["comm_"+row];
@@ -510,7 +510,7 @@ function callBackFnc(source,fnc,result,args)
 {
 	//var response = JSON.parse(result);
 		
-	//console.log(["sendOK",source,fnc,result,args]);
+//	console.log(["sendOK",source,fnc,result,args]);
 	//return;
 	if (typeof source == "function"){
 		source.prototype[fnc](result.status,result.result,args);

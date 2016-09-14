@@ -98,7 +98,6 @@ function showPreview(id,url){
 	});*/
 	
 	$(".cell_"+id).css("display","inline");
-	html5
 }
 
 function autoQueryAndRetrieve(filter)
@@ -406,21 +405,29 @@ function afterGetDataFromDb(status,result)
 	}
 }
 
-function getPixelRatio(data)
+function getPixelRatio(data,id)
 {
 	var t = new js_comunication()
-	t.addRawRequest("index.php","dicom/js_getInstanceTags",this,[{uuid:data},"setInstancePixelRatio"]);
+	t.addRawRequest("index.php","dicom/js_getInstanceTags",this,[{uuid:data},"setInstancePixelRatio",{instance:data,id:id}]);
 	t.sendData();
 }
 
-function setInstancePixelRatio(status,result)
+function setInstancePixelRatio(status,result,obj)
 {
+	//console.log(["jk",obj]);
+	
 	
 	this.pixelSpacing = result.PixelSpacing.split("\\");
 	
 	var columns 	= Number( result.Columns);
 	
 	var rows 		= Number(result.Rows);
+	
+	
+	
+	
+	
+	
 	
 	if (this.__width >= columns) {
 		
@@ -440,7 +447,14 @@ function setInstancePixelRatio(status,result)
 	}
 	
 	
+	console.log(scaleRatio);
+	
 	this.showPatientData(result);
+	
+	
+	if (obj.id === "instance"){
+		this.setInstancePicture(obj.instance);
+	}
 	
 }
 
@@ -617,10 +631,9 @@ function draw_mousedown()
 
 function draw_mouseup()
 {
-	storePaintData();
 	_canvas.removeEventListener("mousemove",draw_paint,false);
+	storePaintData();
 }
-
 
 
 function draw_paint(){
@@ -629,7 +642,7 @@ function draw_paint(){
 		_ctx.beginPath();
 		_ctx.moveTo(_lastMouse.x, _lastMouse.y);
 		_ctx.lineTo(_mouse.x, _mouse.y);
-		_ctx.closePath();
+		_ctx.closePath();var imgWidth = Number($("#width").val());
 		_ctx.stroke();
 	}
 }
@@ -665,7 +678,7 @@ function ruler_countLength()
 	_canvas.removeEventListener("mousedown",ruler_countLinePoints,false);
 	_canvas.removeEventListener("mousemove",ruler_drawLine,false);
 	
-	this.stopDraw();
+	stopDraw();
 		
 }
 
@@ -703,10 +716,17 @@ function ruler(){
 
 function storePaintData()
 {
+	
+	
 	var hiddenCanvas = document.getElementById("hiddenPlayer");
-	var hiddenCtx = hiddenCanvas.getContext("2d");
+	var hiddenCtx = hiddenCanvas.getContext('2d');
 		
-	hiddenCtx.putImageData(_ctx.getImageData(0,0,800,800),0,0);
+	var imageData = _ctx.getImageData(0,0,800,800);
+		
+		console.log(imageData);
+		
+	hiddenCtx.putImageData(imageData,0,0);
+	
 }
 
 function getPaintData()
@@ -787,6 +807,7 @@ function angle_drawLine()
 	if (typeof _ctx.putImageData == "function"){
 		
 		var hCanvas = document.getElementById('hiddenPlayer');
+		
 		var hCtx = hCanvas.getContext('2d');
 		var hID = hCtx.getImageData(0,0,800,800);
 		
@@ -842,7 +863,7 @@ function countAngle()
 {
 	
 	var vector1 = this._pointMatrix[0];
-	var vector2 = this._pointMatrixx[1];
+	var vector2 = this._pointMatrix[1];
 	
 	var vector1Length = countVectorLength(vector1); 
 	
@@ -878,56 +899,72 @@ function countAngle()
 
 function loadInstanceData(uuid){
 	
-	var element = $("#paintWindow #player");
 	
-	this._canvas = element[0]; 
-	
-	this._ctx = this._canvas.getContext('2d');
-	
-	var img = new Image();
-	var url = this.orthancREST+"/instances/"+uuid+"/preview"
-	img.src = url;
-	img.onload = function() {
-		_ctx.drawImage(img,0,0,800,800);
-		_ctx.fill();
-	}
-		
-	$("#paintWindow").dialog({width:900,height:800});
-	
-	
-	
-		
-		
-		/*var url = this.orthancREST+"/instances/"+uuid+"/preview";
-		var canvas = document.getElementById("player");
-		var ctx = canvas.getContext("2d");
-		var img = new Image();
-		
-		img.src = url;
-		img.onload = function() {
-			ctx.drawImage(img,0,0,800,800);
-			ctx.fill();
-		}*/
-	
-	
+	this.getPixelRatio(uuid,"instance");
 	
 }
+
+function setInstancePicture(uuid)
+{
+	console.log(uuid);
+	_canvas = document.getElementById("player");
+	_ctx = _canvas.getContext('2d');
+	
+	var hCanvas = document.getElementById("hiddenPlayer");
+	
+	var hCtx = hCanvas.getContext('2d');
+	
+	
+	var picDir = this.dirStructure(uuid);
+	var img = new Image();
+	var url = this.dicomDir+picDir+".png";
+	
+	var imgWidth = Number($("#width").val());
+	var imgHeight = Number($("#height").val());
+	
+//	console.log([imgWidth,imgHeight]);
+	
+	var scaleFactor = 1;
+	
+	if (imgHeight > imgWidth){
+		scaleFactor = imgHeight / this.__height;
+	}else
+	{
+		scaleFactor = imgWidth / this.__width;
+	}
+	
+
+//	console.log(scaleFactor);
+	
+	img.src = url;
+	img.onload = function() {
+		
+		_ctx.drawImage(img,0,0,imgWidth / scaleFactor,imgHeight / scaleFactor);
+		
+		_ctx.fill();
+		
+		var imageData = _ctx.getImageData(0,0,800,800);
+	
+		hCtx.putImageData(imageData,0,0);
+		hCtx.fill();
+	}
+}
+
 
 function p_draw(){
 	/*var hiddenCanvas = document.getElementById("hiddenPlayer");
 	var dicom = new dicomMath(_canvas,_ctx,this.pixelSpacing,this.scaleRatio, hiddenCanvas);
 	dicom.paint();*/
-	
-	
 	this.draw();
-	
-	
 	
 }
 
 function p_ruler(){
-	var dicom = new dicomMath(this._canvas,this._ctx,this.pixelSpacing, this.scaleRatio);
-	dicom.ruler();
+	
+	this.ruler();
+	
+	//var dicom = new dicomMath(this._canvas,this._ctx,this.pixelSpacing, this.scaleRatio);
+	//dicom.ruler();
 }
 
 
@@ -945,13 +982,11 @@ $(document).ready(function(){
 		loadSeriesData(uuid,cache);
 	}
 	
-	
-	
-	
 	var pviewer = $("#pviewer").val();
+	
 	if (pviewer === "1"){
-		$("#paintWindow").dialog();
-		$("#paintWindow").dialog("close");
+		
+		loadInstanceData($("#instance").val());
 	}
 	
 	

@@ -803,8 +803,6 @@ class dicom extends main {
         
     }
     
-    
-    
     function loadDataFromDb($data)
     {
     	
@@ -845,6 +843,121 @@ class dicom extends main {
     {
     	return $this->ot->getInstanceSimplifiedTags($data["uuid"]);
     }
+    
+    function createFile($data)
+    {
+    	
+    }
+    
+    
+    function dicomTools($data)
+    {
+    	//var_dump($data);
+    	
+    	$size = array();
+
+    	$sql = $this->db->buildSql("SELECT * FROM [pic_data] WHERE [instance_uuid]={instance|s}",$data);
+    	
+    	$dbRes = $this->db->row($sql);
+    	
+    	
+    	if (is_array($dbRes) && array_key_exists("file_location", $dbRes)){
+    		
+    		$tmp = unserialize($dbRes["file_info"]);
+    		
+    		$size[0] = $tmp["width"];
+    		$size[1] = $tmp["height"];
+    		
+    		
+    		if (!file_exists(APP_DIR."public".DIRECTORY_SEPARATOR.$dbRes["file_location"])){
+    			
+    			$pngData = $this->ot->saveFileByID($data["instance"]);
+    			 
+    			$dirStruct = $this->ot->createDirStructure($data["instance"]);
+    			
+    			$fileName = $dirStruct["osDir"].$data["instance"].".png";
+    			 
+    			$res = file_put_contents($fileName, $pngData);
+    			 
+    			if ($res === FALSE){
+    				$this->tplOutError("", "Error writting file to disk!");
+    				return;
+    			}
+    			
+    			
+    		}
+    	}else{
+    		
+    		$pngData = $this->ot->saveFileByID($data["instance"]);
+    		$dirStruct = $this->ot->createDirStructure($data["instance"]);
+    		 
+    		$fileName = $dirStruct["osDir"].$data["instance"].".png";
+    		
+    		$res = file_put_contents($fileName, $pngData);
+    		if ($res === FALSE){
+    			$this->tplOutError("", "Error writting file to disk!");
+    			return;
+    		}
+    		
+    		$pngData = $this->ot->saveFileByID($data["instance"]);
+    		 
+    		$dirStruct = $this->ot->createDirStructure($data["instance"]);
+    		
+    		$fileName = $dirStruct["osDir"].$data["instance"].".png";
+    		 
+    		$res = file_put_contents($fileName, $pngData);
+    		 
+    		if ($res === FALSE){
+    			$this->tplOutError("", "Error writting file to disk!");
+    			return;
+    		}
+    		
+    		
+    		$command = sprintf(IM_DIR."identify %s",$fileName);
+    		
+    		$output=array();
+    		exec($command,$output);
+    		 
+    		
+    		$dt = new DateTime();
+    		
+    		$expire = $dt->modify("+1 month");
+    		$expireDate = $expire->format("Y-m-d");
+    		
+    		$fileInfo = $this->ot->parseFileInfo($output);
+    		
+    		$size[0] = $fileInfo["width"];
+    		$size[1] = $fileInfo["height"];
+    		
+    		$saveData = array(
+    		
+    			"series_uuid"=>"instance",
+    			"instance_uuid"=>$data["instance"],
+    			"file_location"=>$dirStruct["webDir"].$data["instance"].".png",
+    			"file_info"=>serialize($fileInfo),
+    			"order" => "1",
+    			"expire" => $expireDate,
+    			//"series_instance_uid"=>$data[$d]["SeriesInstanceUID"],
+    		);
+    		
+    		$res1 = $this->db->insert_row("pic_data",$saveData);
+    		
+    		
+    		if ($res1["status"]===FALSE){
+    			$this->tplOutError("","Error writting to database: ".$res1["msg"]." / ".$res1["sql"]);
+    			return;
+    		}
+    		
+    	}
+    	$this->smarty->assign("size",$size);
+    	
+    	$this->smarty->assign("Instance",$data["instance"]);
+    	
+    	$this->tplOutput("dicom/pviewer.tpl");
+    	
+    }
+    
+    
 
 }
 

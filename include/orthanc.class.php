@@ -200,7 +200,7 @@ class orthanc extends main {
         return $data;
     }
 
-    private function createDirStructure($instance)
+    public function createDirStructure($instance)
     {
         $dirName1 = substr($instance, 0,1);
         $dirName2 = substr($instance, 1,1);
@@ -219,8 +219,9 @@ class orthanc extends main {
 
     }
     
-    private function parseFileInfo($text)
+    public function parseFileInfo($text)
     {
+    	
         $data = explode(" ",$text[0]);
         $size = explode("x",$data[2]);
     

@@ -1,7 +1,4 @@
 
-			<div id="paintWindow" style="display: none;">{include file="forms/dicom/pviewer.tpl"}</div>
-			
-			
 			<div class="info box">
 				Dátum: <strong>{$Study.MainDicomTags.StudyDate}</strong> 
 				Popis: <strong>{$Study.MainDicomTags.StudyDescription}</strong>
@@ -40,13 +37,13 @@
 					{else}
 					{foreach from=$Instances item=Instance key=i}
 						<div class="inline">
-							<a href="javascript:loadInstanceData('{$Instance}','{$orthancUrl}');">
+							<a href="javascript:showPreview('{$Instance}','{$orthancUrl}');">
 							<figure class="img_border"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="90" align="left"></figure></a>
 <!-- 							<td valign="top"><a href="{$router}dicom/showViewer?seriesUUID={$Series[$s].ID}" class="picLink"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="50"></a></td> -->
 								<div class="inline-block padded">
 								<ul class="list">
 									<li><a href="{$orthancUrl}/web-viewer/app/viewer.html?series={$Series[$s].ID}" target="_blank">Plná kvalita</a></li>
-									<li><a href="javascript:showPreview('{$Instance}','{$orthancUrl}');">Náhľad</a></li>
+									<li><a href="{$webUrl}/d/dicom/dicomTools&instance={$Instance}" target="_self">Nástroje</a></li>
 									<li><a href="{$orthancUrl}/app/explorer.html#series?uuid={$Series[$s].ID}" target="_blank">Plná info..</a></li>
 								</ul>
 								</div>
@@ -55,8 +52,8 @@
 							{*include file= "forms/dicom/pviewer.tpl"*}
 							
 							
-							{* <a href="javascript:('cell_{$Instance}');">
-							<img width="80%" src="{$orthancUrl}/instances/{$Instance}/preview" title="Click to close"></a> *}</div>			
+							<a href="javascript:hidePic('cell_{$Instance}');">
+							<img width="80%" src="{$orthancUrl}/instances/{$Instance}/preview" title="Click to close"></a></div>			
 						</div>
 							
 						
@@ -94,13 +91,13 @@
 				{else}
 					{foreach from=$Instances item=Instance key=i}
 					<div class="inline">
-						<a href="javascript:loadInstanceData('{$Instance}','{$orthancUrl}');">
+						<a href="javascript:showPreview('{$Instance}','{$orthancUrl}');">
 						<figure class="img_border"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="90" align="left"></figure></a>
 <!-- 						<td valign="middle"><center><a href="{$router}dicom/showViewer?seriesUUID={$Series.ID}" class="picLink"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="100"></a></center></td> -->
 								<div class="inline-block padded">
 								<ul class="list">
 									<li><a href="{$orthancUrl}/web-viewer/app/viewer.html?series={$Serie.ID}" target="_blank">Plná kvalita</a></li>
-									<li><a href="javascript:showPreview('{$Instance}','{$orthancUrl}');">Náhlad</a></li>
+									<li><a href="{$webUrl}/d/dicom/dicomTools&instance={$Instance}" target="_self">Nástroje</a></li>
 									<li><a href="{$orthancUrl}/app/explorer.html#series?uuid={$Serie.ID}" target="_blank">Plná info..</a></li>
 								</ul>
 								</div>
@@ -108,8 +105,8 @@
 						<div class="cell_{$Instance}" style="display:none;">
 						
 						{*include file= "forms/dicom/pviewer.tpl"*}
-						{*<a href="javascript:hidePic('cell_{$Instance}');">
-						<img width="80%" src="{$orthancUrl}/instances/{$Instance}/preview" title="Click to close"></a>*}</div>
+						<a href="javascript:hidePic('cell_{$Instance}');">
+						<img width="80%" src="{$orthancUrl}/instances/{$Instance}/preview" title="Click to close"></a></div>
 								
 					</div>
 						
