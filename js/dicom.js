@@ -38,7 +38,7 @@ var _lineCounter = 0;
 
 var _pointMatrix = [];
 
-
+var dicomData = {};
 
 
 
@@ -244,7 +244,7 @@ function changeContrast(e,ui)
 	
 	
 	var dataLn = imageData.data.length;
-	var data = imageData.data
+	var data = imageData.data;
 	var contrast = ui.value;
 	
 	$(".contrastLabel").html(contrast);
@@ -271,10 +271,51 @@ function changeContrast(e,ui)
 	ctx.fill();
 }
 
+function changeGama(e,ui)
+{
+	var canvas = document.getElementById("player");
+	var ctx = canvas.getContext("2d");
+	
+	var hiddenCanvas = document.getElementById("hiddenPlayer");
+	var hiddenCtx = hiddenCanvas.getContext("2d");
+	
+	var imageData= hiddenCtx.getImageData(0,0,this.__width,this.__height);
+	
+	//console.log(imageData);
+	//return;
+	
+	var dataLn = imageData.data.length;
+	var data = imageData.data
+	var gamma = ui.value;
+	
+	var gamaCorr =  1 / gamma;
+	console.log(gamaCorr);
+	
+	$(".gamaLabel").html(gamma);
+	
+	for (var i = 0; i < dataLn; i += 4) {
+		
+		//data[i] = data[i]+brightness < 255 ? data[i]+brightness:255;
+		data[i] = Math.pow(255*(data[i]/255),gamaCorr);
+		data[i+1] = Math.pow(255*(data[i+1]/255),gamaCorr);
+		data[i+2] = Math.pow(255*(data[i+2]/255),gamaCorr);
+		//data[i+1] = data[i+1]+brightness < 255 ? data[i+1]+brightness:255;
+		//data[i+2] = data[i+2]+brightness < 255 ? data[i+2]+brightness:255;
+	}
+	
+	imageData.data = data;
+	
+	ctx.putImageData(imageData,0,0);
+	
+	ctx.fill();
+}
+
 function changeBrightness(e,ui)
 {
 //	console.log([e,ui]);
-	var canvas = document.getElementById("player");_canvas.addEventListener("mousedown",angle_countLinePoints,false);
+	var canvas = document.getElementById("player");
+	
+	
 	var ctx = canvas.getContext("2d");
 	
 	var hiddenCanvas = document.getElementById("hiddenPlayer");
@@ -414,19 +455,26 @@ function getPixelRatio(data,id)
 
 function setInstancePixelRatio(status,result,obj)
 {
-	//console.log(["jk",obj]);
+	//console.log(["jk",result]);
+	
+	this.dicomData = result;
 	
 	
-	this.pixelSpacing = result.PixelSpacing.split("\\");
 	
-	var columns 	= Number( result.Columns);
+	if (result.PixelSpacing == undefined && result.PixelAspectRatio != undefined){
+		
+		this.pixelSpacing = result.PixelAspectRatio.split("\\");
+		
+	}else{
+		
+		this.pixelSpacing = result.PixelSpacing.split("\\");
+		
+	}
+	
+	
+	var columns 	= Number(result.Columns);
 	
 	var rows 		= Number(result.Rows);
-	
-	
-	
-	
-	
 	
 	
 	if (this.__width >= columns) {
@@ -447,7 +495,7 @@ function setInstancePixelRatio(status,result,obj)
 	}
 	
 	
-	console.log(scaleRatio);
+	//console.log(scaleRatio);
 	
 	this.showPatientData(result);
 	
@@ -574,6 +622,21 @@ function init()
 			brightnessStatus = ui;
 			changeBrightness(e,ui);
 	});
+	
+	$("#gamaSlider").slider({
+		min:0.01,
+		max:7.99,
+		step:0.01
+	
+	});
+	
+	$("#gamaSlider").on("slide",function(e,ui){
+			gamaStatus = ui;
+			changeGama(e,ui);
+	});
+	
+	
+	
 	
 	//loadSeriesData();
 	$("#dialog").dialog();
@@ -948,6 +1011,10 @@ function setInstancePicture(uuid)
 		hCtx.putImageData(imageData,0,0);
 		hCtx.fill();
 	}
+	
+	
+	//this.calculateWinWC(this.dicomData.WindowCenter,this.dicomData.WindowWidth);
+	
 }
 
 
@@ -967,6 +1034,66 @@ function p_ruler(){
 	//dicom.ruler();
 }
 
+function calculateWinWC(windowCenter,windowWidth)
+{
+	console.log(this.dicomData);
+	
+	var start = 0;
+	var end = 255;
+	
+	//console.log(_ctx);
+	
+	//var min = windowCenter- 0.5 - (windowWidth-1) / 2;
+	//var max = windowCenter- 0.5 + (windowWidth-1) / 2;
+	
+	var min = 0;
+	var max = 255;
+	
+	
+	console.log(["cnt",min,max]);
+	
+	var imageData = _ctx.getImageData(0,0,800,800);
+	
+	var dataLn = imageData.data.length;
+	var data = imageData.data;
+	
+	console.log(data);
+	
+	for (var i=0; i<dataLn; i+=4){
+		
+		data[i] = calculateColor(min,max,data[i],windowCenter,windowWidth);
+		data[i+1] = calculateColor(min,max,data[i+1],windowCenter,windowWidth);
+		data[i+2] = calculateColor(min,max,data[i+2],windowCenter,windowWidth);
+	}
+	
+	imageData.data = data;
+	
+	//console.log(data);
+	
+	_ctx.putImageData(imageData,0,0);
+	_ctx.fill();
+	
+}
+
+function calculateColor(min,max,byte,windowCenter,windowWidth)
+{
+	//console.log(byte);
+	
+	if (byte <= 0){
+		
+		return 0;
+		
+	}else if (byte > 4095){
+		
+		return 255;
+		
+	}else{
+		
+		return ( ( byte - (windowCenter - 0.5) ) / (windowWidth - 1) + 0.5 ) * 255;
+		
+	}
+}
+
 
 
 
@@ -975,6 +1102,7 @@ $(document).ready(function(){
 	init();
 	
 	var mviewer = $("#mviewer").val();
+	
 	if (mviewer === "1") {
 		var cache = $("#mviewer_cache").val();
 		var uuid = $("#series").val();

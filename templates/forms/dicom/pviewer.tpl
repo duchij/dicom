@@ -19,6 +19,8 @@
 	<ul>
 		<li>Contrast: <code><div class="contrastLabel">0</div></code><div id="contrastSlider" style="width:150px;"></div></li>
 		<li>Brigthness:<code> <div class="brightnessLabel">0</div></code><div id="brightnessSlider" style="width:150px;"></div></li>
+		<li>Gama:<code> <div class="gamaLabel">0</div></code><div id="gamaSlider" style="width:150px;"></div></li>
+		
 		<li><a href="javascript:resetPicture();">Obnova nastaveni</a></li>
 	</ul>
 	

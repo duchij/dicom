@@ -875,9 +875,16 @@ class dicom extends main {
     			 
     			$dirStruct = $this->ot->createDirStructure($data["instance"]);
     			
-    			$fileName = $dirStruct["osDir"].$data["instance"].".png";
+    			$fileName = $dirStruct["osDir"].$data["instance"]."_i.png";
     			 
     			$res = file_put_contents($fileName, $pngData);
+    			
+    			$nFile = str_replace("_i", "", $fileName);
+    			
+    			
+    			$cmd = IM_DIR."convert ".$fileName." -auto-level ".$nFile;
+    			
+    			shell_exec($cmd);
     			 
     			if ($res === FALSE){
     				$this->tplOutError("", "Error writting file to disk!");
@@ -899,11 +906,14 @@ class dicom extends main {
     			return;
     		}
     		
+    		 		
+    		
+    		
     		$pngData = $this->ot->saveFileByID($data["instance"]);
     		 
     		$dirStruct = $this->ot->createDirStructure($data["instance"]);
     		
-    		$fileName = $dirStruct["osDir"].$data["instance"].".png";
+    		$fileName = $dirStruct["osDir"].$data["instance"]."_i.png";
     		 
     		$res = file_put_contents($fileName, $pngData);
     		 
@@ -911,6 +921,13 @@ class dicom extends main {
     			$this->tplOutError("", "Error writting file to disk!");
     			return;
     		}
+    		
+    		$nFile = str_replace("_i", "", $fileName);
+    		 
+    		 
+    		$cmd = IM_DIR."convert ".$fileName." -auto-level ".$nFile;
+    		 
+    		shell_exec($cmd);
     		
     		
     		$command = sprintf(IM_DIR."identify %s",$fileName);

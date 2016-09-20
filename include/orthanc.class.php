@@ -187,7 +187,7 @@ class orthanc extends main {
     {
         $options  = array(
             "http"=>array(
-                'header'  => "Content-type: image/png\r\n",
+                'header'  => "Content-type: Image/png\r\n",
                 'method'  => 'GET',
                 'content' =>http_build_query($data),
             ),
@@ -236,7 +236,7 @@ class orthanc extends main {
             "colors"=>$data[6],
             "fileSize"=>$data[7],
             "data1"=>$data[8],
-            "data2"=>$data[9],
+           // "data2"=>$data[9],
     
     
         );
@@ -327,15 +327,37 @@ class orthanc extends main {
         	
             $fileName = $picDir.$instance;
 
-            $fileNameExt = sprintf("%s.png",$fileName);
+            $fileNameExt = sprintf("%s_i.png",$fileName);
 
-            if (!file_exists($fileNameExt)){
+            //if (!file_exists($fileNameExt)){
 
-                $picData = $this->getPNGContents($this->dicomData["main_server"]."/instances/".$instance."/preview");
+                $picData = $this->getPNGContents($this->dicomData["main_server"]."/instances/".$instance."/image-uint16");
+               
                 if (file_put_contents($fileNameExt,$picData)==FALSE){
                     return FALSE;
-                	}
-            }
+                }
+                
+                $nFile = str_replace("_i","",$fileNameExt);
+                
+                $cmd = IM_DIR."convert -verbose ".$fileNameExt." -auto-level ".$nFile;
+//                 var_dump($cmd);
+                $shellRes = array();
+                exec($cmd,$shellRes);
+               
+//                 var_dump($shellRes);
+                
+                
+                //if (count($shellRes)>1)
+                //{
+                	unlink($fileNameExt);
+//                 }else{
+//                 	echo "zle";
+//                 	exit;
+//                 	return FALSE;
+//                 }
+                	
+           // }
+            
             $command="";
             $fileTmp  = basename($fileName);
                 
@@ -400,7 +422,7 @@ class orthanc extends main {
     public function getQueriesContent($path,$id)
     {
 
-        $url = O_C_URL.$path."/answers/".$id."/content";
+        $url = O_C_URL.$path."/answers/".$id."/preview";
         return $this->getContent2($url);
 
     }
@@ -408,7 +430,7 @@ class orthanc extends main {
 
     public function saveFileByID($id)
     {
-        $url = $this->url."/instances/".$id."/preview";
+        $url = $this->url."/instances/".$id."/image-uint16";
 
         return $this->getPNGContents($url);
     }
