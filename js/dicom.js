@@ -182,6 +182,8 @@ function dragging(e,ui,cache){
 	var pos = ui.value;
 	var instance = this.Instances[pos];
 	
+	console.log(instance);
+	
 	if (instance != undefined)
 	{
 		
@@ -455,7 +457,7 @@ function getPixelRatio(data,id)
 
 function setInstancePixelRatio(status,result,obj)
 {
-	//console.log(["jk",result]);
+	console.log(["jk",result]);
 	
 	this.dicomData = result;
 	

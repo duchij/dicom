@@ -339,7 +339,9 @@ class orthanc extends main {
                 
                 $nFile = str_replace("_i","",$fileNameExt);
                 
-                $cmd = IM_DIR."convert -verbose ".$fileNameExt." -auto-level ".$nFile;
+                //$cmd = IM_DIR."convert -verbose ".$fileNameExt." -auto-level ".$nFile;
+                $cmd = "cp ".$fileNameExt." ".$nFile;
+//                 $cmd = "cp ".$fileNameExt." ".$nFile;
 //                 var_dump($cmd);
                 $shellRes = array();
                 exec($cmd,$shellRes);
