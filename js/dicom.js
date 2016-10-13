@@ -469,7 +469,12 @@ function setInstancePixelRatio(status,result,obj)
 		
 	}else{
 		
-		this.pixelSpacing = result.PixelSpacing.split("\\");
+		if (result.PixelSpacing == undefined){
+			this.pixelSpacing[0]=1;
+			this.pixelSpacing[1]=1;
+		}else{
+			this.pixelSpacing = result.PixelSpacing.split("\\");
+		}
 		
 	}
 	
