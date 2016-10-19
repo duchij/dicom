@@ -1,11 +1,6 @@
 
 <div class="row">
-
-<p>{$Instance}
-	</p>
 <div class="one fifth">
-	
-
 	
 <h1>Priehliadač</h1>	
 <!-- Snímka: <code><div id="mplayer_frame"></div></code> -->
@@ -31,7 +26,14 @@
 	<li><a href="javascript:stopDraw();">Zrus malovanie</a></li>
 	</ul>
 	<div class="info box">
-		<div id="patientInfo"></div>
+			<h2><div id="PatientName" class="small" ></div></h2>
+			<span class="small">Narodeny:</span> <strong><div id="PatientBirthDate" class="small inline"></div></strong><br>
+			<span class="small">Vek:</span>  <strong><div id="PatientAge" class="small inline"></div></strong><br>
+			<span class="small">Sex:</span>  <strong><div id="PatientSex" class="small inline"></div></strong><br>
+			<span class="small">Dátum štúdie:</span>  <strong><div id="AcquisitionDate" class="small inline"></div></strong><br>
+			<span class="small">Čas štúdie:</span>  <strong><div id="AcquisitionTime" class="small inline"></div></strong><br>
+			<span class="small">Protokol:</span>  <strong><div id="ProtocolName" class="small inline"></div></strong><br>
+			<span class="small">Veľkosť pixela:</span> <strong> <div id="PixelSpacing" class="small inline"></div></strong>
 	</div>
 	
 	

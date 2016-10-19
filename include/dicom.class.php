@@ -1,13 +1,37 @@
 <?php
 require_once INCLUDE_DIR."orthanc.class.php";
 
+class windowPresets {
+
+    public static $windowPresets = array(
+        
+        "Abdomen"       =>array("w"=>350,"c"=>40),
+        "Bone"          =>array("w"=>1000,"c"=>200),
+        "Brain"         =>array("w"=>80,"c"=>40),
+        "Foramen magnum"=>array("w"=>120,"c"=>250),
+        "Larynx"        =>array("w"=>180,"c"=>80),
+        "Lung"          =>array("w"=>1250,"c"=>-500),
+        "Mediastinum"   =>array("w"=>400,"c"=>50),
+        "Os petrosum"   =>array("w"=>1800,"c"=>250),
+        "Pelvis"        =>array("w"=>450,"c"=>50),
+        "Sinus"         =>array("w"=>4000,"c"=>400),
+        
+    );
+    
+    public static function getWindows(){
+        
+        return self::$windowPresets;
+   
+    }
+}
+
 class dicom extends main {
 
     /**
      * @var object $OT orthanc manipulating class
      */
     var $ot;
-
+   
 
     function __construct(){
         parent::__construct("dicom");
@@ -30,6 +54,15 @@ class dicom extends main {
     public function js_getInstanceTags($data)
     {
     	return $this->getInstanceTags($data);
+    }
+    
+    public function js_getWindowsPresets(){
+        
+        return array("status"=>true,"result"=>windowPresets::getWindows());
+    }
+    public function js_setWindowVOI($data){
+        
+        return $this->setWindowVOI($data);
     }
 
 
@@ -665,13 +698,13 @@ class dicom extends main {
             
             $res = $this->ot->createFilesFromSeriesInstances($res1["result"]);
             
-            if ($res){
+            if ($res["status"]){
             
                 $dt = new DateTime();
                 $expDt = $dt->modify("+3 month");
                 $expireDate = $expDt->format("Y-m-d");
             
-                $dbRes = $this->saveDataToDb($res, $data["seriesUUID"], $expireDate);
+                $dbRes = $this->saveDataToDb($res["result"], $data["seriesUUID"], $expireDate);
             
                 if ($dbRes["status"] === FALSE){
                 	
@@ -685,7 +718,7 @@ class dicom extends main {
 
             }else{
             	
-                $this->tplOutError("","No pictures created.....");
+                $this->tplOutError("",$res["result"]);
                 return;
             } 
         }
@@ -698,22 +731,24 @@ class dicom extends main {
             
         for ($d=1;$d<=$dataLn;$d++)
         {
-        
-            $saveData[] = array(
-                
-                "series_uuid"=>$seriesUUID,
-                "instance_uuid"=>$data[$d]["instance"],
-                "file_location"=>$data[$d]["file"],
-                "file_info"=>serialize($data[$d]["info"]),
-                "order" =>$data[$d]["order"],
-                "expire" => $expireDate,
-                //"series_instance_uid"=>$data[$d]["SeriesInstanceUID"],
-            );
+            if ($data[$d]["instance"]!=NULL){
+             
+                $saveData[] = array(
+                    
+                    "series_uuid"=>$seriesUUID,
+                    "instance_uuid"=>$data[$d]["instance"],
+                    "file_location"=>$data[$d]["file"],
+                    "file_info"=>serialize($data[$d]["info"]),
+                    "order" =>$data[$d]["order"],
+                    "expire" => $expireDate,
+                    //"series_instance_uid"=>$data[$d]["SeriesInstanceUID"],
+                );
+            }
         }
             
-            $res = $this->db->insert_rows("pic_data",$saveData);
+        $res = $this->db->insert_rows("pic_data",$saveData);
             
-            return $res;
+        return $res;
     }
     
     function pacs($request){
@@ -835,7 +870,23 @@ class dicom extends main {
     {
     
     	$res= $this->ot->getSeriesData($data["series"]);
-    	return $res;
+    	
+    	if ($res["status"]===FALSE){
+    	    return $res;
+    	}
+    	
+    	$dicomData = $this->ot->getInstanceSimplifiedTags($res["result"]["Instances"][0]);
+    	
+    	if ($dicomData["status"] === FALSE){
+    	    
+    	    return $dicomData;
+    	    
+    	}
+    	
+    	$result = array("status"=>true,"result"=>array("SeriesData"=>$res["result"],"dicomData"=>$dicomData["result"]));
+    	
+    	
+    	return $result;
     }
     
     
@@ -859,7 +910,7 @@ class dicom extends main {
     	$sql = $this->db->buildSql("SELECT * FROM [pic_data] WHERE [instance_uuid]={instance|s}",$data);
     	
     	$dbRes = $this->db->row($sql);
-    	
+//     	var_dump($dbRes);
     	
     	if (is_array($dbRes) && array_key_exists("file_location", $dbRes)){
     		
@@ -869,72 +920,112 @@ class dicom extends main {
     		$size[1] = $tmp["height"];
     		
     		
+    		
     		if (!file_exists(APP_DIR."public".DIRECTORY_SEPARATOR.$dbRes["file_location"])){
-    			
-    			$pngData = $this->ot->saveFileByID($data["instance"]);
+    		    
+    			$url = O_URL."/instances/".$data["instance"]."/file";
+    		    
+    			$dcmData = $this->ot->getDCMContent($url);
     			 
     			$dirStruct = $this->ot->createDirStructure($data["instance"]);
     			
-    			$fileName = $dirStruct["osDir"].$data["instance"]."_i.png";
+    			$fileNameDcm = $dirStruct["osDir"].$data["instance"].".dcm";
     			 
-    			$res = file_put_contents($fileName, $pngData);
+    			$res = file_put_contents($fileNameDcm, $dcmData);
     			
-    			$nFile = str_replace("_i", "", $fileName);
+    			$nFile = str_replace("dcm", "png", $fileNameDcm);
+    			
+    			$dicomDataRes = $this->ot->getInstanceSimplifiedTags($data["instance"]);
     			
     			
-    			$cmd = IM_DIR."convert ".$fileName." -auto-level ".$nFile;
+    			if ($dicomDataRes["status"] === false)
+    			{
+    			    $this->tplOutError("", $dicomDataRes["result"]);
+    			    return;
+    			}
     			
-    			shell_exec($cmd);
+    			if (array_key_exists("WindowCenter", $dicomDataRes["result"])){
+    			    $windowData = $this->ot->getWindowCenterWidth($dicomDataRes["result"]);
+    			    
+    			    $cmd = sprintf("%sdcmj2pnm -v %s --set-window %s %s --write-png %s 2>&1 ",
+    			        DCMTK_DIR,
+    			        $fileNameDcm,
+    			        $windowData["center"],
+    			        $windowData["width"],
+    			        $nFile);
+    			}else{
+    			    $cmd = sprintf("%sdcmj2pnm -v %s --write-png %s 2>&1 ",
+    			        DCMTK_DIR,
+    			        $fileNameDcm,
+    			        $nFile);
+    			}
+    			
+    			
+    			$output = array();
+    			
+    			exec($cmd,$output);
+    			
+    			
+    			
+    			/*if ($output)
     			 
     			if ($res === FALSE){
     				$this->tplOutError("", "Error writting file to disk!");
     				return;
-    			}
+    			}*/
     			
     			
     		}
     	}else{
     		
-    		$pngData = $this->ot->saveFileByID($data["instance"]);
-    		$dirStruct = $this->ot->createDirStructure($data["instance"]);
-    		 
-    		$fileName = $dirStruct["osDir"].$data["instance"].".png";
+    	    $url = O_URL."/instances/".$data["instance"]."/file";
+    	    
+    	    $dcmData = $this->ot->getDCMContent($url);
+    	    
+    	    $dirStruct = $this->ot->createDirStructure($data["instance"]);
+    	     
+    	    $fileNameDcm = $dirStruct["osDir"].$data["instance"].".dcm";
+    	    
+    	    $res = file_put_contents($fileNameDcm, $dcmData);
+    	     
+    	    $nFile = str_replace("dcm", "png", $fileNameDcm);
+    	    
+    	    
+    	    $dicomDataRes = $this->ot->getInstanceSimplifiedTags($data["instance"]);
+    	     
+    	    if ($dicomDataRes["status"] === false)
+    	    {
+    	        $this->tplOutError("", $dicomDataRes["result"]);
+    	        return;
+    	    }
+    	     
+    	    if (array_key_exists("WindowCenter", $dicomDataRes["result"])){
+    	        $windowData = $this->ot->getWindowCenterWidth($dicomDataRes["result"]);
+    	        	
+    	        $cmd = sprintf("%sdcmj2pnm -v %s --set-window %s %s --write-png %s 2>&1 ",
+    	            DCMTK_DIR,
+    	            $fileNameDcm,
+    	            $windowData["center"],
+    	            $windowData["width"],
+    	            $nFile);
+    	     }else{
+    	        
+    	        $cmd = sprintf("%sdcmj2pnm -v %s --write-png %s 2>&1 ",
+    	            DCMTK_DIR,
+    	            $fileNameDcm,
+    	            $nFile);
+    	        
+    	    }
+    	    
+    	    $output = array();
+    	     
+    	    exec($cmd,$output);
+    	    
     		
-    		$res = file_put_contents($fileName, $pngData);
-    		if ($res === FALSE){
-    			$this->tplOutError("", "Error writting file to disk!");
-    			return;
-    		}
-    		
-    		 		
-    		
-    		
-    		$pngData = $this->ot->saveFileByID($data["instance"]);
-    		 
-    		$dirStruct = $this->ot->createDirStructure($data["instance"]);
-    		
-    		$fileName = $dirStruct["osDir"].$data["instance"]."_i.png";
-    		 
-    		$res = file_put_contents($fileName, $pngData);
-    		 
-    		if ($res === FALSE){
-    			$this->tplOutError("", "Error writting file to disk!");
-    			return;
-    		}
-    		
-    		$nFile = str_replace("_i", "", $fileName);
-    		 
-    		 
-    		$cmd = IM_DIR."convert ".$fileName." -auto-level ".$nFile;
-    		 
-    		shell_exec($cmd);
-    		
-    		
-    		$command = sprintf(IM_DIR."identify %s",$fileName);
+    		$command = sprintf(IM_DIR."identify %s",$nFile);
     		
     		$output=array();
     		exec($command,$output);
-    		 
     		
     		$dt = new DateTime();
     		
@@ -966,6 +1057,7 @@ class dicom extends main {
     		}
     		
     	}
+    	
     	$this->smarty->assign("size",$size);
     	
     	$this->smarty->assign("Instance",$data["instance"]);
@@ -974,8 +1066,65 @@ class dicom extends main {
     	
     }
     
-    
+    public function setWindowVOI($data)
+    {
+        
+        $series = $data["series"];
+        
+        
+        $seriesData  = $this->ot->getSeriesData($series);
+        
+        if ($seriesData["status"] === FALSE)
+        {
+            return $this->resultStatus(false, $seriesData["result"]);
+        }
+        
+        
+        $instances = $seriesData["result"]["Instances"];
+        
+        
+        foreach ($instances as $instance){
 
+            $dirData = $this->ot->createDirStructure($instance);
+            
+            $dcmFile = $dirData["osDir"].$instance.".dcm";
+            $nFile = $dirData["osDir"].$instance.".png";
+            
+            $dcmCmd = sprintf("%sdcmj2pnm -v %s --set-window %s %s --write-png %s 2>&1",
+                DCMTK_DIR,
+                $dcmFile,
+                $data["center"],
+                $data["width"],
+                $nFile);
+            $output = array();
+            
+            exec($dcmCmd,$output);
+            
+            #todo dorobit podmienku na zle spracovanie shellu
+            
+        }
+        
+        
+        $sql = "SELECT [file_location],[file_info] FROM [pic_data] WHERE [series_uuid]={series|s} ORDER BY [order] ASC";
+        $rep = array("series"=>$data["series"]);
+        $sql= $this->db->buildSql($sql, $rep);
+        $table = $this->db->table($sql);
+        
+        if ($table["status"]){
+        
+            foreach ($table["table"] as &$row){
+
+                $row["file_info"] = unserialize($row["file_info"]);
+            
+            }
+            
+            return array("status"=>true,"result"=>array("file"=>$table["table"],"dicom"=>$seriesData["result"]));
+        
+        }else{
+        
+            return array("status"=>false,"result"=>$table["msg"][2]);
+        }
+    }
 }
 
 return "dicom";

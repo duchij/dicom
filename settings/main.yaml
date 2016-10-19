@@ -5,3 +5,4 @@ imagemagick_dir: /usr/bin/
 web_url: http://dicom.local/
 router: http://dicom.local/d/
 os_dir: /web/loc_dicom/public/
+dcmtk_dir: /usr/bin/

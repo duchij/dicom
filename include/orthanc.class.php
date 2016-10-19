@@ -199,6 +199,38 @@ class orthanc extends main {
 
         return $data;
     }
+    
+    
+    /**
+     * Function gets DCM file content from Orthanc server for further processing
+     * @param strinf $url orthanc_url/instances/UUID/file
+     * @param boolean $includePath
+     * @param array $data
+     * @return mixed content of the file
+     */
+    
+    public function getDCMContent($url,$includePath = false,$data=array())
+    {
+        $options  = array(
+            "http"=>array(
+                'header'  => "Content-type: Application/DICOM\r\n",
+                'method'  => 'GET',
+                'content' =>http_build_query($data),
+            ),
+        );
+        
+        $context = stream_context_create($options);
+        
+        $data = file_get_contents($url,$includePath,$context);
+        
+        return $data;
+        
+    }
+    /**
+     * Creates complete path to instance in public/dicom/pictures/x/y/z
+     * @param string $instance the UUID of the instance
+     * @return mixed status-boolean, osDir = path on OS, webDir = the webUrl of the file
+     */
 
     public function createDirStructure($instance)
     {
@@ -218,10 +250,48 @@ class orthanc extends main {
 
 
     }
+    /**
+     * Extract Window Center And Width from Dicom Tags
+     * @param array $tagsData
+     * @return array[]|mixed[center,width]
+     */
+    
+    public function getWindowCenterWidth($tagsData)
+    {
+        $result = array();
+        
+        $center = $tagsData["WindowCenter"];
+        $width = $tagsData["WindowWidth"];
+        
+        if (strpos($center,"\\") !== FALSE){
+            
+            $tmp = explode("\\",$center);
+            $result["center"]= $tmp[0];
+            
+        }else{
+             
+             $result["center"] = $tagsData["WindowCenter"];
+         
+        }
+        
+        
+        if (strpos($width,"\\") !== FALSE){
+        
+            $tmp = explode("\\",$width);
+            $result["width"]= $tmp[0];
+        
+        }else{
+             
+            $result["width"] = $tagsData["WindowWidth"];
+             
+        }
+         
+         return $result;
+        
+    }
     
     public function parseFileInfo($text)
     {
-    	
         $data = explode(" ",$text[0]);
         $size = explode("x",$data[2]);
     
@@ -320,45 +390,101 @@ class orthanc extends main {
         	$webDir = $dirData["webDir"];
         	
         	$res = $this->getContent2($this->dicomData["main_server"]."/instances/".$instance);
+        	
         	if ($res["status"]==FALSE){
+        	
         	    return $res;
         	}
+        	
         	$instanceData = $res["result"];
         	
             $fileName = $picDir.$instance;
 
-            $fileNameExt = sprintf("%s_i.png",$fileName);
+            $fileNameExt = sprintf("%s.dcm",$fileName);
 
-            //if (!file_exists($fileNameExt)){
+            if (!file_exists($fileNameExt)){
 
-                $picData = $this->getPNGContents($this->dicomData["main_server"]."/instances/".$instance."/image-uint16");
+                $picData = $this->getDCMContent($this->dicomData["main_server"]."/instances/".$instance."/file");
                
                 if (file_put_contents($fileNameExt,$picData)==FALSE){
-                    return FALSE;
+                    return array("status"=>FALSE,"result"=>"Error writinng DICOM data to DISK !!!");
                 }
+            }
+            
+            $nFile = str_replace("dcm",$extension,$fileNameExt);
+            
+            $tagDataRes = $this->getInstanceSimplifiedTags($instance);
+            
+            if ($tagDataRes["status"] === false){
                 
-                $nFile = str_replace("_i","",$fileNameExt);
+                return array("status"=>FALSE,"result"=>"Error getting DICOM Tags from Instance !!!");
+            
+            }
+            $tagData = $tagDataRes["result"];
+            
+            if (array_key_exists("WindowCenter", $tagData)){
+            
+                $windowData = $this->getWindowCenterWidth($tagData);
+            
+            }else{
                 
-                //$cmd = IM_DIR."convert -verbose ".$fileNameExt." -auto-level ".$nFile;
-                $cmd = "cp ".$fileNameExt." ".$nFile;
-//                 $cmd = "cp ".$fileNameExt." ".$nFile;
-//                 var_dump($cmd);
-                $shellRes = array();
-                exec($cmd,$shellRes);
-               
-//                 var_dump($shellRes);
+                $windowData = array();
+            
+            }
+            
+            //$cmd = IM_DIR."convert -verbose ".$fileNameExt." -auto-level ".$nFile;
+            
+            $dcmTask = "";
+            
+            switch ($extension){
                 
-                
-                //if (count($shellRes)>1)
-                //{
-                	unlink($fileNameExt);
-//                 }else{
-//                 	echo "zle";
-//                 	exit;
-//                 	return FALSE;
-//                 }
-                	
-           // }
+                case "png":
+                   // $dcmTask = sprintf("dcmj2pnm -v")
+                   if (array_key_exists("center", $windowData)){
+                    
+                        $dcmString = sprintf("%sdcm2pnm -v %s --set-window %s %s --write-png %s 2>&1"
+                            ,DCMTK_DIR
+                            ,$fileNameExt
+                            ,$windowData["center"]
+                            ,$windowData["width"]
+                            ,$nFile
+                        );
+                   }
+                   else{
+                       $dcmString = sprintf("%sdcm2pnm -v %s --write-png %s 2>&1"
+                           ,DCMTK_DIR
+                           ,$fileNameExt
+                           ,$nFile
+                           );
+                   }
+                    break;
+                case "jpg":
+                    
+                    if (array_key_exists("center", $windowData)){
+                        $dcmString = sprintf("%sdcm2pnm -v %s --set-window %s %s --write-jpeg %s 2>&1"
+                            ,DCMTK_DIR
+                            ,$fileNameExt
+                            ,$windowData["center"]
+                            ,$windowData["width"]
+                            ,$nFile
+                            );
+                    }else{
+                        
+                        $dcmString = sprintf("%sdcm2pnm -v %s --write-jpeg %s 2>&1"
+                            ,DCMTK_DIR
+                            ,$fileNameExt
+                            ,$nFile
+                            );
+                        
+                    }
+                    break;
+                   
+                    
+                    
+            }
+            
+            $shellRes = array();
+            exec($dcmString,$shellRes);
             
             $command="";
             $fileTmp  = basename($fileName);
@@ -375,34 +501,15 @@ class orthanc extends main {
                         $result[$order]["file"]= $webDir.$fileTmp.".png";
                         $result[$order]["order"] = $instanceData["IndexInSeries"];
                         $output=array();
-                        $command = sprintf($this->dicomData["imagemagick_dir"]."identify %s.png ",$fileName);
+                        $command = sprintf($this->dicomData["imagemagick_dir"]."identify %s.png 2>&1",$fileName);
                         exec($command,$output);
                         $result[$order]["info"] = $this->parseFileInfo($output);
                        	$result[$order]["SOAPSeriesUID"] = $seriesData["MainDicomTags"]["SeriesInstanceUID"];
 
                        	break;
                 case "jpg":
-                		$creatFile = sprintf("%.jpg",$fileName);
-                		if (!file_exists($creatFile))
-                		{
-                		    $modality=$seriesData["MainDicomTags"];
-                		    if ($modality=="CT" || $modality=="MR"){
-                		        $command = sprintf($this->dicomData["imagemagick_dir"]."convert %s.png -equalize %s.jpg",$fileName,$fileName);
-                		    }else{
-                		        $command = sprintf($this->dicomData["imagemagick_dir"]."convert %s.png %s.jpg",$fileName,$fileName);
-                		    }
-                            
-                            $output=array();
-                            exec($command,$output,$status);
-                            $result[$order]["convert"]["output"] = $output;
-                            $result[$order]["convert"]["status"] = $status;
-                		}
 
-                		$result[$order]["instance"] = $instance;
-                       	$result[$order]["file"] = $webDir.$fileTmp.".jpg";
-
-
-                        $command = sprintf($this->dicomData["imagemagick_dir"]."identify %s.jpg",$fileName);
+                        $command = sprintf($this->dicomData["imagemagick_dir"]."identify %s.jpg 2>&1",$fileName);
                         $output=array();
                         exec($command,$output);
                         $result[$order]["info"] = $this->parseFileInfo($output);
@@ -413,7 +520,7 @@ class orthanc extends main {
                     }
                     //$order++;
                 }
-        return $result;
+        return array("status"=>true,"result"=>$result);
     }
     /**
      * Gets Content in DICOM Tags from QueryRetrieve procedure
@@ -793,6 +900,8 @@ class orthanc extends main {
     	return $res;
     	
     }
+    
+    
     
     
 }

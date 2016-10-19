@@ -101,10 +101,10 @@ class main {
      *
      * @todo toto treba obohatit a furu veci :)
      */
-    public function run($data)
+    public function run()
     {
     	
-    	
+    	$data = $_REQUEST;
         
         if (isset($data["x"])&& $data["x"]=="1"){
             $this->runAsync($data);

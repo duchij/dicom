@@ -24,9 +24,12 @@
 <!-- 							<td valign="top"><a href="javascript:showPreview('{$Instance}','{$orthancUrl}');" class="picLink"><img src="{$orthancUrl}/instances/{$Instances[0]}/preview" width="50"></a></td> -->
 						  
 						  <div class="inline">
-						  	<a href="{$router}dicom/showViewer&seriesUUID={$Series[$s].ID}">
+						  	<a href="javascript:web_showViewer('{$Series[$s].ID}');" target="_self">
+						  	
+<!-- 						  	<a href="{$router}dicom/showViewer&seriesUUID={$Series[$s].ID}"> -->
+						  	
 						  	<figure class="img_border"><img src="{$orthancUrl}/instances/{$Instances[0]}/preview" width="90" align="left"></figure></a>
-									<div class="inline-block padded">
+<!-- 									<div class="inline-block padded"> -->
 									<ul class="list">
 										<li><a href="{$orthancUrl}/web-viewer/app/viewer.html?series={$Series[$s].ID}" target="_blank">Prehliadac</a></li>
 <!-- 									<li><a href="javascript:showPreview('{$Instance}','{$orthancUrl}');">Náhľad</a></li> -->
@@ -39,11 +42,15 @@
 						<div class="inline">
 							<a href="javascript:showPreview('{$Instance}','{$orthancUrl}');">
 							<figure class="img_border"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="90" align="left"></figure></a>
-<!-- 							<td valign="top"><a href="{$router}dicom/showViewer?seriesUUID={$Series[$s].ID}" class="picLink"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="50"></a></td> -->
+<!--  							<td valign="top"><a href="{$router}dicom/showViewer?seriesUUID={$Series[$s].ID}" class="picLink"><img src="{$orthancUrl}/instances/{$Instance}/preview" width="50"></a></td> --> -->
 								<div class="inline-block padded">
 								<ul class="list">
 									<li><a href="{$orthancUrl}/web-viewer/app/viewer.html?series={$Series[$s].ID}" target="_blank">Plná kvalita</a></li>
-									<li><a href="{$webUrl}/d/dicom/dicomTools&instance={$Instance}" target="_self">Nástroje</a></li>
+									
+									<li><a href="javascript:showTools('{$Instance}');" target="_self">Nástroje</a></li>
+<!-- 									<li><a href="{$webUrl}/d/dicom/dicomTools&instance={$Instance}" target="_self">Nástroje</a></li> -->
+								
+								
 									<li><a href="{$orthancUrl}/app/explorer.html#series?uuid={$Series[$s].ID}" target="_blank">Plná info..</a></li>
 								</ul>
 								</div>
@@ -55,13 +62,9 @@
 							<a href="javascript:hidePic('cell_{$Instance}');">
 							<img width="80%" src="{$orthancUrl}/instances/{$Instance}/preview" title="Click to close"></a></div>			
 						</div>
-							
-						
-						
-						
 					{/foreach}
 					{/if}
-				</div>	
+				<!-- </div>	  -->
 				{/foreach}
 						
 			{else}
@@ -78,7 +81,9 @@
 				{if count($Instances)>2}
 <!-- 					<td valign="middle"><center><a href="javascript:showPreview('{$Instance}','{$orthancUrl}');" class="picLink"><img src="{$orthancUrl}/instances/{$Instances[0]}/preview" width="100"></a></center></td> -->
 						<div class="inline">
-							<a href="{$router}dicom/showViewer&seriesUUID={$Series.ID}">
+<!-- 							<a href="{$router}dicom/showViewer&seriesUUID={$Series.ID}"> -->
+								<a href="javascript:web_showViewer('{$Series.ID}');" target="_self">
+						
 							<figure class="img_border"><img src="{$orthancUrl}/instances/{$Instances[0]}/preview" width="90" align="left"></figure></a>
 								<div class="inline-block padded">
 								<ul class="list">
@@ -97,7 +102,10 @@
 								<div class="inline-block padded">
 								<ul class="list">
 									<li><a href="{$orthancUrl}/web-viewer/app/viewer.html?series={$Serie.ID}" target="_blank">Plná kvalita</a></li>
-									<li><a href="{$webUrl}/d/dicom/dicomTools&instance={$Instance}" target="_self">Nástroje</a></li>
+									<li><a href="javascript:showTools('{$Instance}');" target="_self">Nástroje</a></li>
+									
+<!-- 									<li><a href="{$webUrl}/d/dicom/dicomTools&instance={$Instance}" target="_self">Nástroje</a></li> -->
+									
 									<li><a href="{$orthancUrl}/app/explorer.html#series?uuid={$Serie.ID}" target="_blank">Plná info..</a></li>
 								</ul>
 								</div>

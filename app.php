@@ -5,13 +5,24 @@ DEFINE("APP_DIR",__DIR__.DIRECTORY_SEPARATOR);
 $settings = yaml_parse_file(APP_DIR."/settings/main.yaml");
 
 DEFINE("SQL_DB", $settings["storage_url"]);
+
+
+/**
+ * @var string O_URL the complete url to orthanc server...
+ */
 DEFINE("O_URL",$settings["main_server"]); //Main DICOM/ORTHANC Server
+
+
+
 DEFINE("O_C_URL",$settings["client_server"]); //Client DICOM/ORTHANC
 DEFINE("WEB_URL",$settings["web_url"]);
 DEFINE("ROUTER",$settings["router"]);
 DEFINE("INCLUDE_DIR",__DIR__.DIRECTORY_SEPARATOR."include".DIRECTORY_SEPARATOR);
 DEFINE("IM_DIR",$settings["imagemagick_dir"]);
 DEFINE("PUBLIC_DIR",__DIR__.DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR);
+
+DEFINE("DCMTK_DIR",$settings["dcmtk_dir"]);
+
 
 
 //require_once INCLUDE_DIR.'orthanc.class.php';

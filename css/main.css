@@ -88,12 +88,7 @@ body {
 	/*background-color: lightgray;*/
 	text-align: center;
 }
-/*#slider {
-	width:30px;
-	height:30px;
-	background-color: black;
-	text-align:center;
-}*/
+
 
 #imagePlayer{
 	text-align: center;
@@ -213,6 +208,32 @@ body {
 
 .img_border {
 	padding:2px;
+	
+}
+
+
+
+/* ine veci */
+#cover{ 
+	display: none;
+    position: fixed;
+    height: 100%;
+    width: 100%;
+	z-index:100;
+    background: rgba(0, 0, 0, 0.5); 
+}
+
+#progressBar {
+	position:fixed;
+	top:50%;
+	left:50%;
+	width:200px;
+}
+
+#progressBar .ui-progressbar-value {
+    background-color: green;
+	
+  }
 	
 }
 

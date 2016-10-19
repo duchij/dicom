@@ -40,9 +40,7 @@ var _pointMatrix = [];
 
 var dicomData = {};
 
-
-
-
+var windowStateChanged = false;
 
 
 function clone(obj){
@@ -109,6 +107,7 @@ function autoQueryAndRetrieve(filter)
 
 function retrieveAllQueries(path)
 {
+
 	var t=new js_comunication();
 	t.addRawRequest("index.php","jsOt/retrieveAllAsync",this,[{path:path},"afterAllRetrieve"]);
 	t.sendData();
@@ -140,7 +139,6 @@ function moveCursor(id)
 	$('body').mousemove(function(e){
 		//console.log(e.pageX);
 		var posX = e.pageX;
-		console.log(posX);
 		$("#slider").css("left",posX);
 		
 	});
@@ -203,7 +201,13 @@ function dragging(e,ui,cache){
 		var canvas = document.getElementById("player");
 		var ctx = canvas.getContext("2d");
 		var img = new Image();
-		img.src = url;
+		
+		if (this.windowStateChanged){
+			img.src = url+"?"+(new Date().getTime());
+		}else{
+			img.src = url;
+		}
+		
 		
 		var viewWidth = instance.file_info.width*wRatio;
 		var viewHeight = instance.file_info.height*hRatio;
@@ -375,6 +379,7 @@ function loadSeriesData(series,cache)
 }
 
 function initSlider(frCount,cache){
+	
 	$("#sliderBar").css("width","100%");
 	$("#slider").slider();
 	
@@ -424,18 +429,21 @@ function afterGetDataFromDb(status,result)
 			var url = this.dCacheDir+file;
 			console.log("url:"+url);
 			
-			var canvas = document.getElementById("player");
+			_canvas = document.getElementById("player");
 			
-			var ctx = canvas.getContext("2d");
+			_ctx = _canvas.getContext("2d");
 			
 			var img = new Image();
-			img.src =url
+			img.src = url;
 			
 			var viewWidth = imageData.width*wRatio;
 			var viewHeight = imageData.height*hRatio;
 			
 			img.onload = function (){
-				ctx.drawImage(img,0,0,viewWidth,viewHeight);
+				
+				_ctx.drawImage(img,0,0,viewWidth,viewHeight);
+				
+				_ctx.fill();
 				
 				var hiddenCanvas = document.getElementById("hiddenPlayer");
 				var hiddenCtx = hiddenCanvas.getContext("2d");
@@ -513,27 +521,66 @@ function setInstancePixelRatio(status,result,obj)
 	
 }
 
+function dicomDtToDate(date)
+{
+	var year = date.substr(0,4);
+	var month = date.substr(4,2);
+	var day = date.substr(6,2);
+	
+	return day+". "+month+" "+year;
+	
+}
+
+function dicomTimeToTime(time)
+{
+	var hour = time.substr(0,2);
+	var min = time.substr(2,2);
+	var sec = time.substr(4,2);
+	
+	return hour+":"+min+":"+sec;
+	
+}
+
 function showPatientData(data)
 {
-	var html = "<strong>{PatientName}</strong></br>" +
-			"Narodený: <strong>{PatientBirthDate}</strong><br>" +
-			"Vek: <strong>{PatientAge}</strong><br> Sex:<strong>{PatientSex}</strong><br>" +
-			"Dátum štúdie: <strong>{AcquisitionDate}</strong> <br>Čas štúdie: <strong>{AcquisitionTime}</strong><br>" +
-			"Protokol: <strong>{ProtocolName}<br>";
+	/*var html = "<strong>k{PatientName}</strong></br><span class='small'>" +
+			"Narodený: <strong>k{PatientBirthDate}</strong><br>" +
+			"Vek: <strong>k{PatientAge}</strong><br> Sex: <strong>k{PatientSex}</strong><br>" +
+			"Dátum štúdie: <strong>k{AcquisitionDate}</strong> <br>Čas štúdie: <strong>k{AcquisitionTime}</strong><br>" +
+			"Protokol: <strong>k{ProtocolName}<br></strong>"+
+			"WindowCenter: <strong>k{WindowCenter}</strong><br>WindowWidth:<strong>k{WindowWidth}</strong><br>"+
+			"PixelSpacing: <strong>k{PixelSpacing}</strong>" +
+			"</span>";
+	*/
+	
+	$("#PatientName").html(data.PatientName);
+	$("#PatientBirthDate").html(this.dicomDtToDate(data.PatientBirthDate));
+	$("#PatientAge").html(data.PatientAge);
+	$("#PatientSex").html(data.PatientSex);
+	
+	$("#AcquisitionDate").html(this.dicomDtToDate(data.AcquisitionDate));
+	$("#AcquisitionTime").html(this.dicomTimeToTime(data.AcquisitionTime));
+	$("#ProtocolName").html(data.ProtocolName);
+	$("#WindowCenter").html(data.WindowCenter);
+	$("#WindowWidth").html(data.WindowWidth);
+	$("#PixelSpacing").html(this.pixelSpacing[0]+" mm");
 			
-	var data = {
+	/*var data = {
 		PatientName:data.PatientName,
 		PatientBirthDate:data.PatientBirthDate,
 		PatientAge:data.PatientAge,
 		PatientSex:data.PatientSex,
 		AcquisitionDate:data.AcquisitionDate,
 		AcquisitionTime:data.AcquisitionTime,
-		ProtocolName:data.ProtocolName
+		ProtocolName:data.ProtocolName,
+		WindowCenter:data.WindowCenter,
+		WindowWidth:data.WindowWidth,
+		PixelSpacing:this.pixelSpacing[0]
 	};
 	
 	var fHtml = onlineRes.fncs.sprintf(html,data);
 	
-	$("#patientInfo").html(fHtml);
+	$("#patientInfo").html(fHtml);*/
 			
 }
 
@@ -541,26 +588,74 @@ function showPatientData(data)
 function afterLoadSeries(status,result)
 {
 	
+	
 	if (status)
 	{
-		this.sliderData.frames = result.Instances.length;
-
-		$("#mplayer_frame").html(result.Instances.length+"/1");
+		var seriesData = result.SeriesData;
+		var dicomData = result.dicomData;
 		
-		initSlider();
+		console.log(seriesData);
+		
+		this.sliderData.frames = seriesData.Instances.length;
+
+		$("#mplayer_frame").html(seriesData.Instances.length+"/1");
+		
+		
 	
-		this.Instances = result.Instances;
-		var Instance = result.Instances[0];
+		this.Instances = seriesData.Instances;
+		
+		var Instance = seriesData.Instances[0];
 		var file = dirStructure(Instance);
+		
+		initSlider(seriesData.Instances.length);
+		
+		
 		var url = this.dicomDir+file+".png";
+		
+		
+		if (dicomData.PixelSpacing == undefined && dicomData.PixelAspectRatio != undefined){
+			
+			this.pixelSpacing = dicomData.PixelAspectRatio.split("\\");
+			
+		}else{
+			
+			if (dicomData.PixelSpacing == undefined){
+				this.pixelSpacing[0]=1;
+				this.pixelSpacing[1]=1;
+				
+			}else{
+				this.pixelSpacing = dicomData.PixelSpacing.split("\\");
+			}
+			
+		}
+		
+		var columns 	= Number(dicomData.Columns);
+		
+		var rows 		= Number(dicomData.Rows);
+		
+		
 		var canvas = document.getElementById("player");
 		var ctx = canvas.getContext("2d");
 		var img = new Image();
 		
+		var width = columns * (this.__width / columns);
+		var height = rows * (this.__height / rows);
+		
+		showPatientData(dicomData);
+		
 		img.src = url;
+		
 		img.onload = function() {
-			ctx.drawImage(img,0,0,10,20);
+			ctx.drawImage(img,0,0,width,height);
 			ctx.fill();
+			
+			
+			var hiddenCanvas = document.getElementById("hiddenPlayer");
+			var hiddenCtx = hiddenCanvas.getContext("2d");
+		
+			hiddenCtx.drawImage(img,0,0,width,height);
+			hiddenCtx.fill();
+			
 		}
 		
 		
@@ -735,7 +830,7 @@ function ruler_countLength()
 		le = le / 100;
 					
 		_ctx.font = "18px Helvetica";
-		_ctx.fillStyle ="white";
+		_ctx.fillStyle ="yellow";
 		_ctx.fillText("cca "+le+" mm",_lineMouse.x,_lineMouse.y);
 		
 		storePaintData();	
@@ -807,7 +902,7 @@ function getPaintData()
 	var imageData = hiddenCtx.getImageData(0,0,800,800);
 	
 	_ctx.putImageData(imageData,0,0);
-	
+	//http://stackoverflow.com/questions/21888194/how-to-redraw-image-in-canvas
 }
 
 function stopDraw(){
@@ -844,7 +939,7 @@ function ruler_drawLine()
 }
 
 function angle()
-{
+{http://stackoverflow.com/questions/21888194/how-to-redraw-image-in-canvas
 	this._canvas = document.getElementById("player");
 	this._ctx = this._canvas.getContext("2d");
 	
@@ -952,7 +1047,7 @@ function countAngle()
 	
 	
 	_ctx.font = "18px Helvetica";
-	_ctx.fillStyle ="white";
+	_ctx.fillStyle ="yellow";
 	_ctx.fillText("cca "+angle+"˚",vector1.endX,vector1.endY);
 	
 	this.storePaintData();
@@ -989,6 +1084,8 @@ function setInstancePicture(uuid)
 	var img = new Image();
 	var url = this.dicomDir+picDir+".png";
 	
+	console.log(url);
+	
 	var imgWidth = Number($("#width").val());
 	var imgHeight = Number($("#height").val());
 	
@@ -1004,7 +1101,7 @@ function setInstancePicture(uuid)
 	}
 	
 
-//	console.log(scaleFactor);
+	console.log(scaleFactor);
 	
 	img.src = url;
 	img.onload = function() {
@@ -1101,6 +1198,118 @@ function calculateColor(min,max,byte,windowCenter,windowWidth)
 	}
 }
 
+function getWindowPresets(){
+	
+	var t = new js_comunication();
+	t.addRawRequest("index.php","dicom/js_getWindowsPresets",this,[{},"setWindowPresets"]);
+	t.sendData();
+	
+}
+
+function setWindowPresets(status,result)
+{
+	var presets = result;
+	console.log(presets);
+	var html = "<ul>";
+	for (var preset in presets){
+		html += "<li><a href='javascript:setWindow("+presets[preset].c+","+presets[preset].w+");' target='_self'>"+preset+"</li>";
+		
+	}
+	html +="</ul>";
+	
+	$("#windowLevels").html(html);
+	
+	 	
+	
+}
+
+
+function setWindow(center,width)
+{
+	
+	$("#cover").fadeIn();
+	var pos = $("#mplayer_frame").html();
+	
+	var tmp = pos.split("/");
+	
+	
+	var series = $("#series").val();
+	
+	$("#WindowCenter").html(center);
+	$("#WindowWidth").html(width);
+	
+	var t= new js_comunication();
+	t.addRawRequest("index.php","dicom/js_setWindowVOI",this,[{series:series,center:center,width:width},"setSeriesNewWindow",tmp[1]]);
+	t.sendData();
+	
+}
+
+
+function setSeriesNewWindow(status,result,frame)
+{
+	console.log([status,result,frame]);
+	
+	this.windowStateChanged = true;
+
+	//this.Instances = fileData;
+	var file = result.file[frame].file_location;
+	
+	var imageData = result.file[frame].file_info;
+	
+	console.log(imageData);
+	
+	var wRatio = this.__width / imageData.width;
+	var hRatio = this.__height / imageData.height;
+	
+	
+	var url = this.dCacheDir+file;
+	console.log("url:"+url);
+	
+	var canvas = document.getElementById("player");
+	
+	var ctx = canvas.getContext("2d");
+	
+	var img = new Image();
+	
+	img.src = url+"?"+(new Date()).getTime();
+	
+	var viewWidth = imageData.width*wRatio;
+	var viewHeight = imageData.height*hRatio;
+	
+	_ctx.clearRect(0,0,viewWidth,viewHeight);
+	
+	var hiddenCanvas = document.getElementById("hiddenPlayer");
+	var hiddenCtx = hiddenCanvas.getContext("2d");
+	
+	hiddenCtx.clearRect(0,0,viewWidth,viewHeight);
+	
+	img.onload = function (){
+		
+		ctx.drawImage(img,0,0,viewWidth,viewHeight);
+		
+		ctx.fill();
+	
+		hiddenCtx.drawImage(img,0,0,viewWidth,viewHeight);
+		
+		hiddenCtx.fill();
+		
+	}
+	
+	
+}
+
+function showTools(uuid)
+{
+	//alert(uuid);
+	showProgressBar(true);
+	window.location = "http://"+this.oServer+"/d/dicom/dicomTools&instance="+uuid;
+}
+
+function web_showViewer(uuid)
+{
+	showProgressBar(true);
+	window.location = "http://"+this.oServer+"/d/dicom/showViewer&seriesUUID="+uuid;
+}
 
 
 
@@ -1114,6 +1323,9 @@ $(document).ready(function(){
 		var cache = $("#mviewer_cache").val();
 		var uuid = $("#series").val();
 		//painter();
+		
+		getWindowPresets();
+		
 		loadSeriesData(uuid,cache);
 	}
 	

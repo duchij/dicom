@@ -1,6 +1,5 @@
 <?php
 require_once 'app.php';
-
 $page = new main();
-$page->run($_REQUEST);
+$page->run();
 ?>

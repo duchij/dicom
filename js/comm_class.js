@@ -24,14 +24,20 @@
 //  } : vCallback, nDelay);
 //};
 
-var __comm_count__ = 0;
-var __timeOutId__ = 0;
-var __commQueue__ = [];
+var comm = {queue:{},count:0};
+
+var __timeOutId__ = undefined;
+
 var __timeOut__ = 30;
 var __window__ = undefined;
 var __url__ = "";
 
-var _URL_ ="http://127.0.0.1:8042";
+var _C_URL_ = "http://test2.medic.sk/r/html";
+var _M_URL_ = "http://test2.medic.sk/";
+
+var SESSION = {};
+
+var GV = {};
 
 
 
@@ -79,11 +85,12 @@ function mtime()
 	return d.getTime();
 }
 
+
 String.prototype.format = function(objArgs)
 {
 	var text = this;
 	for (var key in objArgs){
-		var reg = new RegExp('{'+key+'}','gm');
+		var reg = new RegExp('k{'+key+'}','gm');
 		text = text.replace(reg,objArgs[key]);
 	}
 	return text;
@@ -241,6 +248,8 @@ js_comunication.prototype.xhttp = {};
  */
 js_comunication.prototype.addRawRequest = function (url,classPath,source,argsAndCallBack)
 {
+	
+	
 	if (__window__ == undefined){
 		__window__ = source;
 	}
@@ -249,9 +258,11 @@ js_comunication.prototype.addRawRequest = function (url,classPath,source,argsAnd
 		__url__ = url;
 	}
 	
+//	console.log(["count",comm.count]);
 	
-	__commQueue__["comm_"+__comm_count__]={ 
-						id:__comm_count__, 
+	comm.queue["comm_"+comm.count] = {};
+	comm.queue["comm_"+comm.count]={ 
+						id:comm.count, 
 						classPath:classPath, 
 						source:source, 
 						args:argsAndCallBack[0],
@@ -259,11 +270,33 @@ js_comunication.prototype.addRawRequest = function (url,classPath,source,argsAnd
 						oArgs:argsAndCallBack[2] 
 						};
 	
-	__comm_count__++;
+	comm.count = comm.count+1;
+	
+//	console.log(["ad1",comm]);
+	
+	
+}
+
+function showProgressBar(st)
+{
+	var cover  = $("#cover");
+	
+	if (cover != undefined)	{
+		if (st){
+			$("#cover").fadeIn();
+			$("#progressBar").progressbar();
+			$("#progressBar").progressbar("option","value",false);
+		}else{
+			$("#cover").fadeOut();
+		}
+	}else{
+		console.log("No progress bar defined...");
+	}
 }
 
 function extractJsonData(data)
 {
+	//console.log(["extract",data]);
 	var result = [];
 	for (var row in data){
 		if (row.indexOf("comm_")!=-1){
@@ -275,7 +308,7 @@ function extractJsonData(data)
 
 function toggleComm(st)
 {
-	var commBall = __window__.document.getElementById("commBall");
+	/*var commBall = __window__.document.getElementById("commBall");
 	if (commBall != undefined)
 	{
 		if (st){
@@ -285,16 +318,19 @@ function toggleComm(st)
 		{
 			commBall.setAttribute("style","visibility:hidden;");
 		}
-	}
+	}*/
 }
 
 js_comunication.prototype.__sendData = function(_source,_callBack,oThis)
 {
 	
-	clearTimeout(__timeOutId__);
-	toggleComm(true);
+//	console.log(["tests",__timeOutId__,comm,_source,_callBack,oThis]);
 	
-	__timeOutId__ = 0;
+	clearTimeout(__timeOutId__);
+	
+	__timeOutId__ = undefined;
+	
+//	console.log(["processed".__timeOutId]);
 	
 	if (window.XMLHttpRequest) {
 		this.xhttp = new XMLHttpRequest();
@@ -312,29 +348,35 @@ js_comunication.prototype.__sendData = function(_source,_callBack,oThis)
 			catch (e){
 			}
 		}
-	}
+	}	
+	
 	if (!this.xhttp) {
 		alert("Error no XMLHttpRequest or ActiveXObject possibility");
 		return false;
 	}
 	
+	var data = {multi:extractJsonData(comm.queue)};
 	
-	var data = {multi:extractJsonData(__commQueue__)};
+	//this.xhttp.addEventListener("progress", updateProgress);
+	this.xhttp.addEventListener("load", transferComplete);
+	this.xhttp.addEventListener("error", transferFailed);
+	this.xhttp.addEventListener("abort", transferCanceled);
+	showProgressBar(true);
+	
 	this.xhttp.open('POST',__url__,true);
+	
 	this.xhttp.setRequestHeader('Content-type','application/x-www-form-urlencoded');
 			
 	this.xhttp.send("x=1&client=rjson&data="+JSON.stringify(data));
 	
-	this.xhttp.onreadystatechange = function (e)
+	/*this.xhttp.onreadystatechange = function (e)
 	{
 		
-		/*if (_source != undefined && _callBack != undefined){
-			callProgressFnc(_source,_callBack,this.readyState,this.status);
-		}*/
+	
 		
 		if (this.readyState == 4 ){
 			__url__ = "";
-			if (this.status ===200){	
+			if (this.status === 200){	
 				__completedRequest(this.responseText);
 				//__commQueue__ = [];
 			}
@@ -342,7 +384,47 @@ js_comunication.prototype.__sendData = function(_source,_callBack,oThis)
 				__unCompletedRequest(this.statusText);
 			}
 		}
+	}*/
+}
+
+function updateProgress(e)
+{
+	//console.log(["progress",e]);
+	
+	//if (e.lengthComputable)
+	//{
+		var percentComplete = e.loaded / e.total;
+		console.log(["[p]:",e.target.target.responseText]);
+//		console.log(["running",percentComplete]);
+	//}else{
+//		console.log(["updateP",e]);
+	//}
+	
+}
+
+function transferComplete(e)
+{
+	//console.log(["tcomplete",e]);
+	
+	var target = e.target;
+	
+	if (target.readyState == 4){
+		if (target.status == 200){
+			__completedRequest(target.responseText);
+		}else{
+			__unCompletedRequest(target.statusText);
+		}
 	}
+}
+
+function transferFailed(e)
+{
+	console.log(["tfail",e]);
+}
+
+function transferCanceled(e)
+{
+	console.log(["tcancel",e]);
 }
 
 
@@ -357,10 +439,15 @@ js_comunication.prototype.__sendData = function(_source,_callBack,oThis)
 js_comunication.prototype.sendData = function(_source,_callBack)
 {
 	
-	if (__timeOutId__ == 0){
+	
+	if (__timeOutId__ == undefined){
+		
 		__timeOutId__ = setTimeout(this.__sendData,__timeOut__,_source,_callBack);
+
 	}
 }
+
+
 /**
  * Posle ASYNC request smerom k PHP za pomoci JQuery.Ajax funkie posiela po jednom
  * 
@@ -417,8 +504,8 @@ js_comunication.prototype.addSendJQRequest = function (url,classPath,source,args
 js_comunication.prototype.setProgress = function (){
 	
 	if (this.xhttp != undefined){
-		this.xhttp.addEventListener("progress",updateProgress);
-		this.xhttp.addEventListener("load",dataLoaded);
+		//this.xhttp.addEventListener("progress",updateProgress);
+		//this.xhttp.addEventListener("load",dataLoaded);
 	}
 	else
 	{
@@ -434,11 +521,11 @@ js_comunication.prototype.setProgress = function (){
  */
 
 function updateProgress(e){
-	console.log(e);
+//	console.log(e);
 }
 
 function dataLoaded(e){
-	console.log(e);
+//	console.log(e);
 }
 
 
@@ -450,25 +537,62 @@ function callProgressFnc(source,callBack, state,status)
 
 function __completedRequest(respond)
 {
-	 //console.log(respond);
-        var	resObj = JSON.parse(respond);
-       // console.log(resObj);
+   	console.log(["po vsetkom",respond]);
+    var resObj;
+    
+    try{
+    	
+    	resObj = JSON.parse(respond);
+    	toggleComm(false);
+    	
+//    	console.log(resObj);
+	
+    	for (var row in resObj){
+    		
+        	if (row.length > 0){
+        	
+        		if (comm.queue["comm_"+resObj[row].id] != undefined){
+        		
+        			callBackFnc(comm.queue["comm_"+resObj[row].id].source,comm.queue["comm_"+resObj[row].id].callBack,resObj[row],comm.queue["comm_"+resObj[row].id].oArgs);
+        			delete comm.queue["comm_"+row];
+        		
+        		}	
+        	}
+    	}
+        comm.count = 0;
+    	showProgressBar(false);
+    }
+    catch (err){
+    	showProgressBar(false);
+    	
+    	if (respond.indexOf("getErrorText")!=-1){
+    		
+    		pushWindow({caption:"Chyba",content:respond});
+    		
+    	}
+    	else{
+    		respond = respond.substr(0,500)+"...(truncated)";
+        	
+        	var error = "Error occured:\r\nk{message}\r\n\r\nStack:\r\nk{stack}\r\n\r\nResponse message:\r\nk{respond}\r\n\r\nProcessing data stopped !!!";
+        	        	
+        	var fError = onlineRes.fncs.sprintf(error,
+        			{
+        				message:err.message,
+        				stack:err.stack,
+        				respond:respond
+    				});
+//        	console.log(fError);
+        	
+        	comm.queue = {};
+        	comm.count = 0;
+        	
+        	alert(fError);
+        	
+        	throw new Error (fError);
+    	}
+    	
+    }
         
-        toggleComm(false);
-        for (var row in resObj){
-            if (row.length > 0){
-            	
-            	if (__commQueue__["comm_"+resObj[row].id] != undefined){
-            		//console.log(["he",__commQueue__]);
-            		callBackFnc(__commQueue__["comm_"+resObj[row].id].source,__commQueue__["comm_"+resObj[row].id].callBack,resObj[row],__commQueue__["comm_"+resObj[row].id].oArgs);
-            		__comm_count__ -=1; 
-            		delete __commQueue__["comm_"+row];
-            		
-            	}	
-            }
-            
-            //completedRequest(resObj[row],source,callBack,Args);	
-        }
 }
 
 function completedRequest(respond,source,callBack,oArgs)
@@ -478,18 +602,54 @@ function completedRequest(respond,source,callBack,oArgs)
 
 function __unCompletedRequest(respond)
 {
-	var resObj=JSON.parse(respond);
-	//toggleComm(false);
-	for (var row in resObj){
-		if (row.length > 0){
-			if (__commQueue__["comm_"+resObj[row].id] != undefined){
-				errorCallBackFn(__commQueue__["comm_"+resObj[row].id].source,__commQueue__["comm_"+resObj[row].id].callBack,resObj[row],__commQueue__["comm_"+resObj[row].id].oArgs);
-				__comm_count__ -=1; 
-				delete __commQueue__["comm_"+row];
-			}
-		}
-		
-	}
+	var resObj;
+        
+    try{
+    	
+    	resObj = JSON.parse(respond);
+    	
+    	for (var row in resObj){
+    		if (row.length > 0){
+    			if (comm.queue["comm_"+resObj[row].id] != undefined){
+    				errorCallBackFn(comm.queue["comm_"+resObj[row].id].source,comm.queue["comm_"+resObj[row].id].callBack,resObj[row],comm.queue["comm_"+resObj[row].id].oArgs);
+    				//__comm_count__ -=1; 
+    				delete comm.queue["comm_"+row];
+    			}
+    		}
+    	}
+    	comm.count=0;
+    }
+    catch (err){
+    	
+    	if (respond.indexOf("getErrorText")!=-1){
+    		
+    		pushWindow({caption:"Chyba",content:respond});
+    		
+    	}
+    	else{
+    		respond = respond.substr(0,255)+"...(truncated)";
+        	
+        	var error = "Error occured:\r\nk{message}\r\n\r\nStack:\r\nk{stack}\r\n\r\nResponse message:\r\nk{respond}\r\n\r\nProcessing data stopped !!!";
+        	        	
+        	var fError = onlineRes.fncs.sprintf(error,
+        			{
+        				message:err.message,
+        				stack:err.stack,
+        				respond:respond
+    				});
+        	
+//        	console.log(fError);
+        	
+        	comm.queue = {};
+        	comm.count = 0;
+        	
+        	alert(fError);
+        	
+        	throw new Error (fError);
+    	}
+    }
+//	console.log(resObj);
+	
 }
 
 function errorCallBackFnc(source,fnc,result,args)

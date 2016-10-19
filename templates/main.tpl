@@ -42,6 +42,9 @@
 </head>
 <body>
 
+<div id="cover"><div id="progressBar"></div></div>
+
+
 <div class="row">
 	<nav class="nav asphalt">
 			<li><a href="{$webUrl}">Domov...</a></li>
@@ -84,6 +87,9 @@
 <div class="row asphalt box">
 		<p class="align-center small white">Scripting by Boris Duchaj, 2016</p>
 </div> <!-- End of content div -->
+
+
+
 
 {include file="scripts.tpl"}
 
